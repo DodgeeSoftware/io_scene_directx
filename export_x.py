@@ -24,8 +24,24 @@
 # sets the formatting requirements for this python file.
 # <pep8 compliant>
 
-def ExportFile():
-	f = open("c:/TestFile.x","w+")
-	f.write("Hello World")
+import bpy
+
+def ExportFile(filepath):
+	print("Exporting File " + filepath)
+	f = open(filepath,"w+")
+	f.write("# Created by DodgeeSoftware's DirectX Model Exporter\n")
+	f.write("# www.dodgeesoftware.com\n")
+	f.write("\n")
+	f.write("# This is the file header\n")
+	f.write("xof 0302txt 0064\n")
+	f.write("\n")
+	f.write("# Template tags should go here\n")
+	f.write("\n")
+	f.write("# Model Data goes here inside tags\n")
+
+	# Write a list of all object in the scene
+	for obj in bpy.data.objects:
+		f.write(obj.name + "\n")
+
 	f.close()
 	return {'FINISHED'}

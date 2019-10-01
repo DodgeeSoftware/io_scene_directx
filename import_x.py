@@ -24,8 +24,8 @@
 # sets the formatting requirements for this python file.
 # <pep8 compliant>
 
-def ImportFile():
-	f = open("c:/TestFile.x","r")
+def ImportFile(filepath):
+	f = open(filepath,"r")
 	contents = f.read()
 	print(contents)
 	f.close()

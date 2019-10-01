@@ -73,7 +73,7 @@ class ImportX(bpy.types.Operator, ImportHelper):
 		layout = self.layout
 
 	def execute(self, context):
-		return ImportFile()
+		return ImportFile(self.filepath)
 
 @orientation_helper(axis_forward='-Z', axis_up='Y')
 class ExportX(bpy.types.Operator, ExportHelper):
@@ -93,7 +93,7 @@ class ExportX(bpy.types.Operator, ExportHelper):
 		return True
 	
 	def execute(self, context):
-		return ExportFile()
+		return ExportFile(self.filepath)
 
 def menu_func_import(self, context):
 	self.layout.operator(ImportX.bl_idname, text="DirectX X (.x)")
