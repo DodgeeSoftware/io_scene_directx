@@ -34,27 +34,66 @@ def ExportFile(filepath):
 	WriteHeader(f)
 	WriteBoilerPlate(f)
 	
-	#f.write("\n")
-	#f.write("# Template tags should go here\n")
-	#f.write("\n")
-	#f.write("# Model Data goes here inside tags\n")
-
 	## Write a list of all object in the scene
 	#for obj in bpy.data.objects:
 		#f.write(obj.name + "\n")
 
+	# TODO: Figure out how to apply to transforms (particularly to normals)
+	
 	# Write a list of all meshes in the scene
 	for mesh in bpy.data.meshes:
-		f.write(mesh.name + "\n")
+		f.write("Mesh " + mesh.name + "\n{" + "\n")
+		# Grab the Number of Vertices
 		mesh_verts = mesh.vertices[:]
+		# Grab the Number of Polygons
 		mesh_polygons = mesh.polygons[:]
-		f.write("Number of Verts: " + str(len(mesh_verts)))
-		f.write("\n")
+		# Write the Vertex Count
+		f.write(str(len(mesh_verts)) + ";\n")
+		# Write the Vertices in the mesh		
 		for vert in mesh_verts:
-			f.write(str(vert.co[0]) + ", " + str(vert.co[1]) + ", " + str(vert.co[2]))
+			f.write(str(vert.co[0]) + ";" + str(vert.co[1]) + ";" + str(vert.co[2]) + ";,")
 			f.write("\n")
-		f.write("Number of Polygons: " + str(len(mesh_polygons)))
-		
+		f.write("\n")
+		# Write the Number of Polygons
+		f.write(str(len(mesh_polygons)) +";\n")
+		for polygon in mesh_polygons:
+			f.write("3;")
+			f.write(str(polygon.vertices[0]) + ",")
+			f.write(str(polygon.vertices[1]) + ",")
+			f.write(str(polygon.vertices[2]) + ",")
+			f.write(";")
+			f.write("\n")
+		f.write("\n")
+		f.write("MeshNormals \n{\n")
+		for polygon in mesh_polygons:
+			vert1Index = polygon.vertices[0];
+			vert2Index = polygon.vertices[1];
+			vert3Index = polygon.vertices[2];
+			f.write(str(mesh.vertices[vert1Index].normal[0]) + ",")
+			f.write(str(mesh.vertices[vert1Index].normal[1]) + ",")
+			f.write(str(mesh.vertices[vert1Index].normal[2]) + ",")
+			f.write("\n")
+			f.write(str(mesh.vertices[vert2Index].normal[0]) + ",")
+			f.write(str(mesh.vertices[vert2Index].normal[1]) + ",")
+			f.write(str(mesh.vertices[vert2Index].normal[2]) + ",")
+			f.write("\n")
+			f.write(str(mesh.vertices[vert3Index].normal[0]) + ",")
+			f.write(str(mesh.vertices[vert3Index].normal[1]) + ",")
+			f.write(str(mesh.vertices[vert3Index].normal[2]) + ",")
+			f.write("\n")
+		f.write("}\n")
+		f.write("MeshMaterialList\n{\n")
+		f.write("# TODO: Material ID per face\n")
+		f.write("Material [MaterialName]\n{\n")
+		f.write("# TODO: Material Properties\n")
+		f.write("TextureFilename\n{\n")
+		f.write("# TODO: Texture Filename\n")
+		f.write("}\n")
+		f.write("}\n")
+		f.write("}\n")
+		f.write("}" + "\n")
+		f.write("\n")
+
 	f.close()
 	return {'FINISHED'}
 
