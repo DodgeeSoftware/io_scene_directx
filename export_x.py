@@ -28,20 +28,317 @@ import bpy
 
 def ExportFile(filepath):
 	print("Exporting File " + filepath)
-	f = open(filepath,"w+")
-	f.write("# Created by DodgeeSoftware's DirectX Model Exporter\n")
-	f.write("# www.dodgeesoftware.com\n")
-	f.write("\n")
-	f.write("# This is the file header\n")
-	f.write("xof 0302txt 0064\n")
-	f.write("\n")
-	f.write("# Template tags should go here\n")
-	f.write("\n")
-	f.write("# Model Data goes here inside tags\n")
+	#f = open(filepath,"w+")
+	f = open(filepath, "w", encoding="utf8", newline="\n")
 
-	# Write a list of all object in the scene
-	for obj in bpy.data.objects:
-		f.write(obj.name + "\n")
+	WriteHeader(f)
+	WriteBoilerPlate(f)
+	
+	#f.write("\n")
+	#f.write("# Template tags should go here\n")
+	#f.write("\n")
+	#f.write("# Model Data goes here inside tags\n")
 
+	## Write a list of all object in the scene
+	#for obj in bpy.data.objects:
+		#f.write(obj.name + "\n")
+
+	# Write a list of all meshes in the scene
+	for mesh in bpy.data.meshes:
+		f.write(mesh.name + "\n")
+		mesh_verts = mesh.vertices[:]
+		mesh_polygons = mesh.polygons[:]
+		f.write("Number of Verts: " + str(len(mesh_verts)))
+		f.write("\n")
+		for vert in mesh_verts:
+			f.write(str(vert.co[0]) + ", " + str(vert.co[1]) + ", " + str(vert.co[2]))
+			f.write("\n")
+		f.write("Number of Polygons: " + str(len(mesh_polygons)))
+		
 	f.close()
 	return {'FINISHED'}
+
+def WriteHeader(f):
+	f.write("xof 0302txt 0032\n")
+	f.write("Header {1; 0; 1;}\n")
+	f.write("\n")
+	f.write("# Created by DodgeeSoftware's DirectX Model Exporter\n")
+	f.write("# Website: www.dodgeesoftware.com\n")
+	f.write("# Email: info@dodgeesoftware.com\n")
+	f.write("\n")
+
+def WriteBoilerPlate(f):
+	f.write("template Header\n")
+	f.write("{\n")
+	f.write("    <3D82AB43-62DA-11cf-AB39-0020AF71E433>\n")
+	f.write("    WORD major;\n")
+	f.write("    WORD minor;\n")
+	f.write("    DWORD flags;\n")
+	f.write("}\n\n")
+	
+	f.write("template Vector\n")
+	f.write("{\n")
+	f.write("    <3D82AB5E-62DA-11cf-AB39-0020AF71E433>\n")
+	f.write("    FLOAT x;\n")
+	f.write("    FLOAT y;\n")
+	f.write("    FLOAT z;\n")
+	f.write("}\n\n")
+
+	f.write("template Coords2d\n")
+	f.write("{\n")
+	f.write("    <F6F23F44-7686-11cf-8F52-0040333594A3>\n")
+	f.write("    FLOAT u;\n")
+	f.write("    FLOAT v;\n")
+	f.write("}\n\n")
+
+	f.write("template Matrix4x4\n")
+	f.write("{\n")
+	f.write("    <F6F23F45-7686-11cf-8F52-0040333594A3>\n")
+	f.write("    array FLOAT matrix[16];\n")
+	f.write("}\n\n")
+
+	f.write("template ColorRGBA\n")
+	f.write("{\n")
+	f.write("    <35FF44E0-6C7C-11cf-8F52-0040333594A3>\n")
+	f.write("    FLOAT red;\n")
+	f.write("    FLOAT green;\n")
+	f.write("    FLOAT blue;\n")
+	f.write("    FLOAT alpha;\n")
+	f.write("}\n\n")
+
+	f.write("template ColorRGB\n")
+	f.write("{\n")
+	f.write("    <D3E16E81-7835-11cf-8F52-0040333594A3>\n")
+	f.write("    FLOAT red;\n")
+	f.write("    FLOAT green;\n")
+	f.write("    FLOAT blue;\n")
+	f.write("}\n\n")
+
+	f.write("template TextureFilename\n")
+	f.write("{\n")
+	f.write("    <A42790E1-7810-11cf-8F52-0040333594A3>\n")
+	f.write("    STRING filename;\n")
+	f.write("}\n\n")
+
+	f.write("template Material\n")
+	f.write("{\n")
+	f.write("    <3D82AB4D-62DA-11cf-AB39-0020AF71E433>\n")
+	f.write("    ColorRGBA faceColor;\n")
+	f.write("    FLOAT power;\n")
+	f.write("    ColorRGB specularColor;\n")
+	f.write("    ColorRGB emissiveColor;\n")
+	f.write("    [...]\n")
+	f.write("}\n\n")
+
+	f.write("template MeshFace\n")
+	f.write("{\n")
+	f.write("    <3D82AB5F-62DA-11cf-AB39-0020AF71E433>\n")
+	f.write("    DWORD nFaceVertexIndices;\n")
+	f.write("    array DWORD faceVertexIndices[nFaceVertexIndices];\n")
+	f.write("}\n\n")
+
+	f.write("template MeshTextureCoords\n")
+	f.write("{\n")
+	f.write("    <F6F23F40-7686-11cf-8F52-0040333594A3>\n")
+	f.write("    DWORD nTextureCoords;\n")
+	f.write("    array Coords2d textureCoords[nTextureCoords];\n")
+	f.write("}\n\n")
+
+	f.write("template MeshMaterialList\n")
+	f.write("{\n")
+	f.write("    <F6F23F42-7686-11cf-8F52-0040333594A3>\n")
+	f.write("    DWORD nMaterials;\n")
+	f.write("    DWORD nFaceIndexes;\n")
+	f.write("    array DWORD faceIndexes[nFaceIndexes];\n")
+	f.write("    [Material]\n")
+	f.write("}\n\n")
+
+	f.write("template MeshNormals\n")
+	f.write("{\n")
+	f.write("    <F6F23F43-7686-11cf-8F52-0040333594A3>\n")
+	f.write("    DWORD nNormals;\n")
+	f.write("    array Vector normals[nNormals];\n")
+	f.write("    DWORD nFaceNormals;\n")
+	f.write("    array MeshFace faceNormals[nFaceNormals];\n")
+	f.write("}\n\n")
+
+	f.write("template Mesh\n")
+	f.write("{\n")
+	f.write("    <3D82AB44-62DA-11cf-AB39-0020AF71E433>\n")
+	f.write("    DWORD nVertices;\n")
+	f.write("    array Vector vertices[nVertices];\n")
+	f.write("    DWORD nFaces;\n")
+	f.write("    array MeshFace faces[nFaces];\n")
+	f.write("    [...]\n")
+	f.write("}\n\n")
+
+	f.write("template FrameTransformMatrix\n")
+	f.write("{\n")
+	f.write("    <F6F23F41-7686-11cf-8F52-0040333594A3>\n")
+	f.write("    Matrix4x4 frameMatrix;\n")
+	f.write("}\n\n")
+
+	f.write("template Frame\n")
+	f.write("{\n")
+	f.write("    <3D82AB46-62DA-11cf-AB39-0020AF71E433>\n")
+	f.write("    [...]\n")
+	f.write("}\n\n")
+
+	f.write("template FloatKeys\n")
+	f.write("{\n")
+	f.write("    <10DD46A9-775B-11cf-8F52-0040333594A3>\n")
+	f.write("    DWORD nValues;\n")
+	f.write("    array FLOAT values[nValues];\n")
+	f.write("}\n\n")
+
+	f.write("template TimedFloatKeys\n")
+	f.write("{\n")
+	f.write("    <F406B180-7B3B-11cf-8F52-0040333594A3>\n")
+	f.write("    DWORD time;\n")
+	f.write("    FloatKeys tfkeys;\n")
+	f.write("}\n\n")
+
+	f.write("template AnimationKey\n")
+	f.write("{\n")
+	f.write("    <10DD46A8-775B-11cf-8F52-0040333594A3>\n")
+	f.write("    DWORD keyType;\n")
+	f.write("    DWORD nKeys;\n")
+	f.write("    array TimedFloatKeys keys[nKeys];\n")
+	f.write("}\n\n")
+
+	f.write("template AnimationOptions\n")
+	f.write("{\n")
+	f.write("    <E2BF56C0-840F-11cf-8F52-0040333594A3>\n")
+	f.write("    DWORD openclosed;\n")
+	f.write("    DWORD positionquality;\n")
+	f.write("}\n\n")
+
+	f.write("template Animation\n")
+	f.write("{\n")
+	f.write("    <3D82AB4F-62DA-11cf-AB39-0020AF71E433>\n")
+	f.write("    [...]\n")
+	f.write("}\n\n")
+
+	f.write("template AnimationSet\n")
+	f.write("{\n")
+	f.write("    <3D82AB50-62DA-11cf-AB39-0020AF71E433>\n")
+	f.write("    [Animation]\n")
+	f.write("}\n\n")
+
+	f.write("template XSkinMeshHeader\n")
+	f.write("{\n")
+	f.write("    <3cf169ce-ff7c-44ab-93c0-f78f62d172e2>\n")
+	f.write("    WORD nMaxSkinWeightsPerVertex;\n")
+	f.write("    WORD nMaxSkinWeightsPerFace;\n")
+	f.write("    WORD nBones;\n")
+	f.write("}\n\n")
+
+	f.write("template VertexDuplicationIndices\n")
+	f.write("{\n")
+	f.write("    <b8d65549-d7c9-4995-89cf-53a9a8b031e3>\n")
+	f.write("    DWORD nIndices;\n")
+	f.write("    DWORD nOriginalVertices;\n")
+	f.write("    array DWORD indices[nIndices];\n")
+	f.write("}\n\n")
+
+	f.write("template SkinWeights\n")
+	f.write("{\n")
+	f.write("    <6f0d123b-bad2-4167-a0d0-80224f25fabb>\n")
+	f.write("    STRING transformNodeName;\n")
+	f.write("    DWORD nWeights;\n")
+	f.write("    array DWORD vertexIndices[nWeights];\n")
+	f.write("    array FLOAT weights[nWeights];\n")
+	f.write("    Matrix4x4 matrixOffset;\n")
+	f.write("}\n\n")
+
+
+# *****************************************
+# * FUNCTIONS WHICH WRITE A SINGLE OBJECT *
+# *****************************************
+
+def WriteBool(f, value):
+	print("not implemented yet")
+
+def WriteBool2D(f, value):
+	print("not implemented yet")
+
+def WriteInt(f, value):
+	print("not implemented yet")
+
+def WriteFloat(f, value):
+	print("not implemented yet")
+
+def WriteString(f, text):
+	print("not implemented yet")
+
+def WriteVector(f, vector):
+	print("not implemented yet")
+
+def WriteVertex(f, vertex):
+	print("not implemented yet")
+	
+def WriteColourRGB(f, colour):
+	print("not implemented yet")
+
+def WriteColourRGBA(f, colour):
+	print("not implemented yet")
+
+def WriteColourIndexed(f, colour):
+	print("not implemented yet")
+
+def WriteMatrix4x4(f, matrix):
+	print("not implemented yet")
+
+def WriteQuaternion(f, quaternion):
+	print("not implemented yet")
+
+def WriteBone(f, bone):
+	print("not implemented yet")
+
+def WriteMeshFace(f, face):
+	print("not implemented yet")
+
+def WriteMeshTextureCoords(f, textureCoords):
+	print("not implemented yet")
+
+def WriteMeshMaterialList(f, materialList):
+	print("not implemented yet")
+
+def WriteMeshNormals(f, meshNormals):
+	print("not implemented yet")
+
+def WriteVertextColours(f, meshVertexColours):
+	print("not implemented yet")
+
+def WriteTextureFilename(f, textureFilename):
+	print("not implemented yet")
+	
+def WriteMaterial(f, material):
+	print("not implemented yet")
+
+def WriteMesh(f, mesh):
+	print("not implemented yet")
+
+def WriteFrameTransformMatrix(f, frameTransformMatrix):
+	print("not implemented yet")
+
+def WriteFrame(f, frame):
+	print("not implemented yet")
+
+def WriteFloatKeys(f, floatKeys):
+	print("not implemented yet")
+
+def WriteTimedFloatKeys(f, timedFloatKeys):
+	print("not implemented yet")
+
+def WriteAnimationKey(f, animationKey):
+	print("not implemented yet")
+
+def WriteAnimationOptions(f, animationOptions):
+	print("not implemented yet")
+
+def WriteAnimation(f, animation):
+	print("not implemented yet")
+
+def WriteAnimationSet(f, animationSet):
+	print("not implemented yet")
