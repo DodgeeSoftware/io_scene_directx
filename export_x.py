@@ -34,7 +34,7 @@ def ExportFile(filepath):
 	WriteHeader(f)
 	WriteBoilerPlate(f)
 	
-	## Write a list of all object in the scene
+	# Write a list of all object in the scene
 	#for obj in bpy.data.objects:
 		#f.write(obj.name + "\n")
 
@@ -49,7 +49,7 @@ def ExportFile(filepath):
 		mesh_polygons = mesh.polygons[:]
 		# Write the Vertex Count
 		f.write(str(len(mesh_verts)) + ";\n")
-		# Write the Vertices in the mesh		
+		# Write the Vertices in the mesh
 		for vert in mesh_verts:
 			f.write(str(vert.co[0]) + ";" + str(vert.co[1]) + ";" + str(vert.co[2]) + ";,")
 			f.write("\n")
@@ -82,15 +82,48 @@ def ExportFile(filepath):
 			f.write(str(mesh.vertices[vert3Index].normal[2]) + ",")
 			f.write("\n")
 		f.write("}\n")
+		
+		f.write("MeshTextureCoords \n{\n")
+		f.write("#TODO: Implement me\n")
+		f.write("}\n")
+		
+		# Grab the Materials used by this mesh
+		mesh_materials = mesh.materials[:]
+		
+		# Write the MeshMaterial List
 		f.write("MeshMaterialList\n{\n")
-		f.write("# TODO: Material ID per face\n")
-		f.write("Material [MaterialName]\n{\n")
-		f.write("# TODO: Material Properties\n")
-		f.write("TextureFilename\n{\n")
-		f.write("# TODO: Texture Filename\n")
+		# Write the number of materials used by this mesh
+		f.write(str(len(mesh_materials)) + ";\n")
+		f.write(str(len(mesh_polygons)) +";\n")
+		for polygon in mesh_polygons:
+			f.write(str(polygon.material_index) +",\n")			
+		for material in mesh_materials:
+			f.write("Material "+ material.name + "\n{\n")
+			f.write(str(material.diffuse_color[0]) + ";" + str(material.diffuse_color[1]) + ";" + str(material.diffuse_color[2]) + ";" + str(material.diffuse_color[3]) + ";\n");
+			f.write(str(material.specular_intensity) + ";\n")
+			f.write(str(material.specular_color) + ";\n")
+			#f.write(str(material.emissive_color) + ";\n")
+			f.write("}\n")
 		f.write("}\n")
-		f.write("}\n")
-		f.write("}\n")
+		
+		#f.write(str(len(mesh.material_slots)) + "\n")
+		#if (len(mesh.material_slots) > 0):
+			#f.write("MeshMaterialList\n{\n")
+			#f.write(str(len(mesh.material_slots)) + "\n")
+			#for polygon in mesh_polygons:
+				#f.write("*")
+			#f.write("# TODO: Material ID per face\n")
+			#f.write("Material [MaterialName]\n{\n")
+			#f.write("# TODO: Material Properties\n")		
+		#for polygon in mesh_polygons:
+			#f.write(str(polygon.material_index) + "\n")
+
+		#f.write("TextureFilename\n{\n")
+		#f.write("# TODO: Texture Filename\n")
+		#f.write("}\n")
+		#f.write("}\n")
+		#f.write("}\n")
+		
 		f.write("}" + "\n")
 		f.write("\n")
 
