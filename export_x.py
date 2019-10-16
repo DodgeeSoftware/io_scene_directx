@@ -99,18 +99,55 @@ def ExportFile(filepath):
 			f.write(str(polygon.material_index) +",\n")			
 		for material in mesh_materials:
 			f.write("Material "+ material.name + "\n{\n")
-			f.write(str(material.diffuse_color[0]) + ";" + str(material.diffuse_color[1]) + ";" + str(material.diffuse_color[2]) + ";" + str(material.diffuse_color[3]) + ";\n");
-			f.write(str(material.specular_intensity) + ";\n")
-			# PROBLEM: Non- node materials in Blender have no specular colour
-			#f.write(str(material.specular_color[0]) + ";" + str(material.specular_color[1]) + ";" + str(material.specular_color[2]) + ";" + str(material.specular_color[3]) + ";\n");
-			f.write(str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";\n");
-			# PROBLEM: Non-node materials in Blender have no emissive colour
-			#f.write(str(material.emissive_color[0]) + ";" + str(material.emissive_color[1]) + ";" + str(material.emissive_color[2]) + ";" + str(material.emissive_color[3]) + ";\n");
-			f.write(str(0) + ";" + str(0) + ";" + str(0) + ";" + str(0) + ";\n");
-			f.write("TextureFilename\n{\n")
-			f.write("# TODO: Texture Filename\n")
-			f.write("\"\";\n")
-			f.write("}\n")
+			if material.use_nodes == False:
+				f.write("# Material doesn't use nodes doing best to export properties \n")
+				f.write(str(material.diffuse_color[0]) + ";" + str(material.diffuse_color[1]) + ";" + str(material.diffuse_color[2]) + ";" + str(material.diffuse_color[3]) + ";\n");
+				f.write(str(material.specular_intensity) + ";\n")
+				# PROBLEM: Non- node materials in Blender have no specular colour
+				#f.write(str(material.specular_color[0]) + ";" + str(material.specular_color[1]) + ";" + str(material.specular_color[2]) + ";" + str(material.specular_color[3]) + ";\n");
+				f.write(str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";\n");
+				# PROBLEM: Non-node materials in Blender have no emissive colour
+				#f.write(str(material.emissive_color[0]) + ";" + str(material.emissive_color[1]) + ";" + str(material.emissive_color[2]) + ";" + str(material.emissive_color[3]) + ";\n");
+				f.write(str(0) + ";" + str(0) + ";" + str(0) + ";" + str(0) + ";\n");
+			else:
+				f.write("# Exporter deliberately and only supports the Specular Material Node in the Shader Graph \n")
+				#specularNode = node for node in material.node_tree.nodes if node.type == ""
+				faceColor = [1.0, 1.0, 1.0, 1.0]
+				power = 200.0
+				specularColor = [1.0, 1.0, 1.0, 1.0]
+				emissiveColor = [0.0, 0.0, 0.0, 1.0]
+				filename = ""
+				for node in material.node_tree.nodes:
+					if node.type == 'EEVEE_SPECULAR':
+						colorSocket = node.inputs[0]
+						faceColor[0] = colorSocket.default_value[0]
+						faceColor[1] = colorSocket.default_value[1]
+						faceColor[2] = colorSocket.default_value[2]
+						faceColor[3] = colorSocket.default_value[3]
+						colorSocket = node.inputs[1]
+						specularColor[0] = colorSocket.default_value[0]
+						specularColor[1] = colorSocket.default_value[1]
+						specularColor[2] = colorSocket.default_value[2]
+						specularColor[3] = colorSocket.default_value[3]
+						floatSocket = node.inputs[2]
+						power = floatSocket.default_value
+						colorSocket = node.inputs[3]
+						emissiveColor[0] = colorSocket.default_value[0]
+						emissiveColor[1] = colorSocket.default_value[1]
+						emissiveColor[2] = colorSocket.default_value[2]
+						emissiveColor[3] = colorSocket.default_value[3]
+					if node.type == 'TEX_IMAGE':
+						image = node.image
+						if image != None:
+							filename = image.filepath
+				f.write(str(faceColor[0]) + "," + str(faceColor[1]) + "," + str(faceColor[2]) + "," + str(faceColor[3]) + ";\n")
+				f.write(str(power) + ";\n")
+				f.write(str(specularColor[0]) + "," + str(specularColor[1]) + "," + str(specularColor[2]) + "," + str(specularColor[3]) + ";\n")
+				f.write(str(emissiveColor[0]) + "," + str(emissiveColor[1]) + "," + str(emissiveColor[2]) + "," + str(emissiveColor[3]) + ";\n")
+			if len(filename):
+				f.write("TextureFilename\n{\n")
+				f.write(filename + ";\n")
+				f.write("}\n")
 			f.write("}\n")
 		f.write("}" + "\n")
 		f.write("}" + "\n")
