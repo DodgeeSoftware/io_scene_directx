@@ -50,9 +50,13 @@ def ExportFile(filepath):
 		# Write the Vertex Count
 		f.write(str(len(mesh_verts)) + ";\n")
 		# Write the Vertices in the mesh
-		for vert in mesh_verts:
-			f.write(str(vert.co[0]) + ";" + str(vert.co[1]) + ";" + str(vert.co[2]) + ";,")
-			f.write("\n")
+		for i in range(len(mesh_verts)):
+			vert = mesh_verts[i]
+			f.write(str(vert.co[0]) + ";" + str(vert.co[1]) + ";" + str(vert.co[2]))
+			if i == (len(mesh_verts) - 1):
+				f.write(str(len(mesh_verts)) + ";;\n")
+			else:
+				f.write(str(len(mesh_verts)) + ";,\n")
 		f.write("\n")
 		# Write the Number of Polygons
 		f.write(str(len(mesh_polygons)) +";\n")
