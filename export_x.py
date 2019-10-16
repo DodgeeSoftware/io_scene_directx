@@ -101,29 +101,18 @@ def ExportFile(filepath):
 			f.write("Material "+ material.name + "\n{\n")
 			f.write(str(material.diffuse_color[0]) + ";" + str(material.diffuse_color[1]) + ";" + str(material.diffuse_color[2]) + ";" + str(material.diffuse_color[3]) + ";\n");
 			f.write(str(material.specular_intensity) + ";\n")
-			f.write(str(material.specular_color) + ";\n")
-			#f.write(str(material.emissive_color) + ";\n")
+			# PROBLEM: Non- node materials in Blender have no specular colour
+			#f.write(str(material.specular_color[0]) + ";" + str(material.specular_color[1]) + ";" + str(material.specular_color[2]) + ";" + str(material.specular_color[3]) + ";\n");
+			f.write(str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";\n");
+			# PROBLEM: Non-node materials in Blender have no emissive colour
+			#f.write(str(material.emissive_color[0]) + ";" + str(material.emissive_color[1]) + ";" + str(material.emissive_color[2]) + ";" + str(material.emissive_color[3]) + ";\n");
+			f.write(str(0) + ";" + str(0) + ";" + str(0) + ";" + str(0) + ";\n");
+			f.write("TextureFilename\n{\n")
+			f.write("# TODO: Texture Filename\n")
+			f.write("\"\";\n")
 			f.write("}\n")
-		f.write("}\n")
-		
-		#f.write(str(len(mesh.material_slots)) + "\n")
-		#if (len(mesh.material_slots) > 0):
-			#f.write("MeshMaterialList\n{\n")
-			#f.write(str(len(mesh.material_slots)) + "\n")
-			#for polygon in mesh_polygons:
-				#f.write("*")
-			#f.write("# TODO: Material ID per face\n")
-			#f.write("Material [MaterialName]\n{\n")
-			#f.write("# TODO: Material Properties\n")		
-		#for polygon in mesh_polygons:
-			#f.write(str(polygon.material_index) + "\n")
-
-		#f.write("TextureFilename\n{\n")
-		#f.write("# TODO: Texture Filename\n")
-		#f.write("}\n")
-		#f.write("}\n")
-		#f.write("}\n")
-		
+			f.write("}\n")
+		f.write("}" + "\n")
 		f.write("}" + "\n")
 		f.write("\n")
 
