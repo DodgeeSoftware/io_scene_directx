@@ -87,9 +87,14 @@ def ExportFile(filepath):
 			f.write("\n")
 		f.write("}\n")
 		
-		f.write("MeshTextureCoords \n{\n")
-		f.write("#TODO: Implement me\n")
-		f.write("}\n")
+		# If we have uv data
+		if len(mesh.uv_layers) > 0:
+			# Grab the first UV layer
+			#uv_layer = mesh.uv_layers.active.data
+			#uv = uv_layer.uv
+			f.write("MeshTextureCoords \n{\n")
+			f.write("#TODO: Implement me\n")
+			f.write("}\n")
 		
 		# Grab the Materials used by this mesh
 		mesh_materials = mesh.materials[:]
