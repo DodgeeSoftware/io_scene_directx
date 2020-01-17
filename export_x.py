@@ -26,22 +26,26 @@
 
 import bpy
 
+# TODO: Support for vertex colours via mesh.vertex_colors
+# TODO: Support for vertex UVs
+
 def ExportFile(filepath):
 	print("Exporting File " + filepath)
-	#f = open(filepath,"w+")
+	
 	f = open(filepath, "w", encoding="utf8", newline="\n")
 
+	# Write the File Header to the file
 	WriteHeader(f)
+	# Write all the Template Boiler plate to the file
 	WriteBoilerPlate(f)
-	
-	# Write a list of all object in the scene
-	#for obj in bpy.data.objects:
-		#f.write(obj.name + "\n")
-
-	# TODO: Figure out how to apply to transforms (particularly to normals)
 	
 	# Write a list of all meshes in the scene
 	for mesh in bpy.data.meshes:
+		f.write("Frame\n{\n")
+		# TODO: Figure out how to get the object's world transform
+		f.write("FrameTransformMatrix\n{\n")
+		f.write("#TODO: Implement me\n")
+		f.write("}\n")
 		f.write("Mesh " + mesh.name + "\n{" + "\n")
 		# Grab the Number of Vertices
 		mesh_verts = mesh.vertices[:]
@@ -51,6 +55,7 @@ def ExportFile(filepath):
 		f.write(str(len(mesh_verts)) + ";\n")
 		# Write the Vertices in the mesh
 		for i in range(len(mesh_verts)):
+			# TODO: Do I need to apply the Mesh transform here?
 			vert = mesh_verts[i]
 			f.write(str(vert.co[0]) + ";" + str(vert.co[1]) + ";" + str(vert.co[2]))
 			if i == (len(mesh_verts) - 1):
@@ -68,6 +73,7 @@ def ExportFile(filepath):
 			f.write(";")
 			f.write("\n")
 		f.write("\n")
+		# TODO: Figure out how to apply the transforms to the normals
 		f.write("MeshNormals \n{\n")
 		for polygon in mesh_polygons:
 			vert1Index = polygon.vertices[0];
@@ -87,13 +93,17 @@ def ExportFile(filepath):
 			f.write("\n")
 		f.write("}\n")
 		
-		# If we have uv data
+		# Do we have uv data?
 		if len(mesh.uv_layers) > 0:
-			# Grab the first UV layer
-			#uv_layer = mesh.uv_layers.active.data
-			#uv = uv_layer.uv
+			# NOTE: There can only be one active UVMap per mesh. This
+			# is set by the user in the interface.
+			uvs = mesh.uv_layers.active;
+			# Write the Name of the UVMap
+			f.write("# " + str(uvs.name))
 			f.write("MeshTextureCoords \n{\n")
+			
 			f.write("#TODO: Implement me\n")
+			
 			f.write("}\n")
 		
 		# Grab the Materials used by this mesh
@@ -160,6 +170,7 @@ def ExportFile(filepath):
 			f.write("}\n")
 		f.write("}" + "\n")
 		f.write("}" + "\n")
+		f.write("}")
 		f.write("\n")
 
 	f.close()
