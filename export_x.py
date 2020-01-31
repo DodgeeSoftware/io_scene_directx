@@ -42,10 +42,10 @@ def ExportFile(filepath):
 	# Write a list of all meshes in the scene
 	for mesh in bpy.data.meshes:
 		f.write("Frame\n{\n")
-		# TODO: Figure out how to get the object's world transform
-		f.write("FrameTransformMatrix\n{\n")
-		f.write("#TODO: Implement me\n")
-		f.write("}\n")
+		## TODO: Figure out how to get the object's world transform
+		#f.write("FrameTransformMatrix\n{\n")
+		#f.write("#TODO: Implement me\n")
+		#f.write("}\n")
 		f.write("Mesh " + mesh.name + "\n{" + "\n")
 		# Grab the Number of Vertices
 		mesh_verts = mesh.vertices[:]
@@ -66,49 +66,40 @@ def ExportFile(filepath):
 		# Write the Number of Polygons
 		f.write(str(len(mesh_polygons)) +";\n")
 		for polygon in mesh_polygons:
-			f.write("3;")
-			f.write(str(polygon.vertices[0]) + ",")
-			f.write(str(polygon.vertices[1]) + ",")
-			f.write(str(polygon.vertices[2]) + ",")
+			f.write(str(len(polygon.vertices)) + ";")
+			for vertex in polygon.vertices:
+				f.write(str(vertex) + ",")
 			f.write(";")
 			f.write("\n")
 		f.write("\n")
 		# TODO: Figure out how to apply the transforms to the normals
 		f.write("MeshNormals \n{\n")
 		for polygon in mesh_polygons:
-			vert1Index = polygon.vertices[0];
-			vert2Index = polygon.vertices[1];
-			vert3Index = polygon.vertices[2];
-			f.write(str(mesh.vertices[vert1Index].normal[0]) + ",")
-			f.write(str(mesh.vertices[vert1Index].normal[1]) + ",")
-			f.write(str(mesh.vertices[vert1Index].normal[2]) + ",")
-			f.write("\n")
-			f.write(str(mesh.vertices[vert2Index].normal[0]) + ",")
-			f.write(str(mesh.vertices[vert2Index].normal[1]) + ",")
-			f.write(str(mesh.vertices[vert2Index].normal[2]) + ",")
-			f.write("\n")
-			f.write(str(mesh.vertices[vert3Index].normal[0]) + ",")
-			f.write(str(mesh.vertices[vert3Index].normal[1]) + ",")
-			f.write(str(mesh.vertices[vert3Index].normal[2]) + ",")
-			f.write("\n")
+			for vertex in polygon.vertices:
+				f.write(str(mesh.vertices[vertex].normal[0]) + ",")
+				f.write(str(mesh.vertices[vertex].normal[1]) + ",")
+				f.write(str(mesh.vertices[vertex].normal[2]) + ",")
+				f.write("\n")
 		f.write("}\n")
 		
 		# Do we have uv data?
 		if len(mesh.uv_layers) > 0:
 			# NOTE: There can only be one active UVMap per mesh. This
 			# is set by the user in the interface.
-			uvs = mesh.uv_layers.active;
-			# Write the Name of the UVMap
-			f.write("# " + str(uvs.name))
+			uvs = mesh.uv_layers.active.data[:]
+			## Write the Name of the UVMap
+			#f.write("# " + str(mesh.uv_layers.active.name) + "\n")
 			f.write("MeshTextureCoords \n{\n")
-			
-			f.write("#TODO: Implement me\n")
-			
+			# Write the Number of UV Texture Coords we wills end to the file
+			f.write("# " + str(len(mesh.uv_layers.active.data)) + "\n")
+			# Write the UV Coordinates			
+			for polygon in mesh_polygons:
+				for loop_index in range(polygon.loop_start, polygon.loop_start + polygon.loop_total):
+					f.write(str(uvs[loop_index].uv[0]) + ", " + str(uvs[loop_index].uv[1]) + "\n")
 			f.write("}\n")
 		
 		# Grab the Materials used by this mesh
-		mesh_materials = mesh.materials[:]
-		
+		mesh_materials = mesh.materials[:]		
 		# Write the MeshMaterial List
 		f.write("MeshMaterialList\n{\n")
 		# Write the number of materials used by this mesh
@@ -120,14 +111,14 @@ def ExportFile(filepath):
 			f.write("Material "+ material.name + "\n{\n")
 			if material.use_nodes == False:
 				f.write("# Material doesn't use nodes doing best to export properties \n")
-				f.write(str(material.diffuse_color[0]) + ";" + str(material.diffuse_color[1]) + ";" + str(material.diffuse_color[2]) + ";" + str(material.diffuse_color[3]) + ";\n");
+				f.write(str(material.diffuse_color[0]) + ";" + str(material.diffuse_color[1]) + ";" + str(material.diffuse_color[2]) + ";" + str(material.diffuse_color[3]) + ";\n")
 				f.write(str(material.specular_intensity) + ";\n")
 				# PROBLEM: Non- node materials in Blender have no specular colour
-				#f.write(str(material.specular_color[0]) + ";" + str(material.specular_color[1]) + ";" + str(material.specular_color[2]) + ";" + str(material.specular_color[3]) + ";\n");
-				f.write(str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";\n");
+				#f.write(str(material.specular_color[0]) + ";" + str(material.specular_color[1]) + ";" + str(material.specular_color[2]) + ";" + str(material.specular_color[3]) + ";\n")
+				f.write(str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";\n")
 				# PROBLEM: Non-node materials in Blender have no emissive colour
-				#f.write(str(material.emissive_color[0]) + ";" + str(material.emissive_color[1]) + ";" + str(material.emissive_color[2]) + ";" + str(material.emissive_color[3]) + ";\n");
-				f.write(str(0) + ";" + str(0) + ";" + str(0) + ";" + str(0) + ";\n");
+				#f.write(str(material.emissive_color[0]) + ";" + str(material.emissive_color[1]) + ";" + str(material.emissive_color[2]) + ";" + str(material.emissive_color[3]) + ";\n")
+				f.write(str(0) + ";" + str(0) + ";" + str(0) + ";" + str(0) + ";\n")
 			else:
 				f.write("# Exporter deliberately and only supports the Specular Material Node in the Shader Graph \n")
 				#specularNode = node for node in material.node_tree.nodes if node.type == ""
