@@ -20,7 +20,7 @@
 
 # ##### END ZLIB LICENSE BLOCK #####
 
-# NOTE: Plugins need to pass through a pep8 checker. The following line
+# NOTE: Plugins need to through a pep8 checker. The following line
 # sets the formatting requirements for this python file.
 # <pep8 compliant>
 
@@ -68,36 +68,88 @@ def ExportFile(filepath):
 		for polygon in mesh_polygons:
 			f.write(str(len(polygon.vertices)) + ";")
 			for vertex in polygon.vertices:
-				f.write(str(vertex) + ",")
-			f.write(";")
+				f.write(str(vertex))
+				if vertex == polygon.vertices[-1]:
+					f.write(";")
+				else:
+					f.write(",")
+			if polygon == mesh_polygons[-1]:
+				f.write(";")
+			else:
+				f.write(",")
 			f.write("\n")
 		f.write("\n")
+		
 		# TODO: Figure out how to apply the transforms to the normals
 		f.write("MeshNormals \n{\n")
+		# Calculate the Number of normals
+		numNormals = 0
 		for polygon in mesh_polygons:
 			for vertex in polygon.vertices:
-				f.write(str(mesh.vertices[vertex].normal[0]) + ",")
-				f.write(str(mesh.vertices[vertex].normal[1]) + ",")
-				f.write(str(mesh.vertices[vertex].normal[2]) + ",")
+				numNormals = numNormals + 1
+		# Write the Number of normals
+		f.write(str(numNormals) + ";\n")
+		for polygon in mesh_polygons:
+			for vertex in polygon.vertices:
+				# TODO: This is incorrect needs to be normals for each vertex in the polygon
+				# I don't know how to get the per polygon vertex normal which should
+				# in theory be how soft surfaces are described. At present only hard
+				# surfaces are supported
+				f.write(str(polygon.normal[0]) + ";")
+				f.write(str(polygon.normal[1]) + ";")
+				f.write(str(polygon.normal[2]) + ";")
+				if polygon == mesh_polygons[-1]:
+					if vertex == polygon.vertices[-1]:
+						f.write(";")
+					else:
+						f.write(",")
+				else:
+					f.write(",")
 				f.write("\n")
+				#f.write(str(polygon.vertices[vertex].normal[0]) + ";")
+				#f.write(str(polygon.vertices[vertex].normal[1]) + ";")
+				#f.write(str(polygon.vertices[vertex].normal[2]) + ";")
+				#f.write(",")
+				#f.write("\n")
+		f.write("\n")
+		# Write the Number of Polygons
+		f.write(str(len(mesh_polygons)) +";\n")
+		for polygon in mesh_polygons:
+			f.write(str(len(polygon.vertices)) + ";")
+			for vertex in polygon.vertices:
+				f.write(str(vertex))
+				if vertex == polygon.vertices[-1]:
+					f.write(";")
+				else:
+					f.write(",")
+			if polygon == mesh_polygons[-1]:
+				f.write(";")
+			else:
+				f.write(",")
+			f.write("\n")
 		f.write("}\n")
 		
-		# Do we have uv data?
-		if len(mesh.uv_layers) > 0:
-			# NOTE: There can only be one active UVMap per mesh. This
-			# is set by the user in the interface.
-			uvs = mesh.uv_layers.active.data[:]
-			## Write the Name of the UVMap
-			#f.write("# " + str(mesh.uv_layers.active.name) + "\n")
-			f.write("MeshTextureCoords \n{\n")
-			# Write the Number of UV Texture Coords we wills end to the file
-			f.write("# " + str(len(mesh.uv_layers.active.data)) + "\n")
-			# Write the UV Coordinates			
-			for polygon in mesh_polygons:
-				for loop_index in range(polygon.loop_start, polygon.loop_start + polygon.loop_total):
-					f.write(str(uvs[loop_index].uv[0]) + ", " + str(uvs[loop_index].uv[1]) + "\n")
-			f.write("}\n")
-		
+		## Do we have uv data?
+		#if len(mesh.uv_layers) > 0:
+			## NOTE: There can only be one active UVMap per mesh. This
+			## is set by the user in the interface.
+			#uvs = mesh.uv_layers.active.data[:]
+			### Write the Name of the UVMap
+			##f.write("# " + str(mesh.uv_layers.active.name) + "\n")
+			#f.write("MeshTextureCoords \n{\n")
+			## Calculate the Number of UVs
+			#numUVs = 0
+			#for polygon in mesh_polygons:
+				#for vertex in polygon.vertices:
+					#numUVs = numUVs + 1				
+			## Write the Number of UV Texture Coords we wills end to the file
+			#f.write(str(numUVs) + ";\n")
+			## Write the UV Coordinates			
+			#for polygon in mesh_polygons:
+				#for loop_index in range(polygon.loop_start, polygon.loop_start + polygon.loop_total):
+					#f.write(str(uvs[loop_index].uv[0]) + ";" + str(uvs[loop_index].uv[1]) + ";," + "\n")
+			#f.write("}\n")
+
 		# Grab the Materials used by this mesh
 		mesh_materials = mesh.materials[:]		
 		# Write the MeshMaterial List
@@ -111,14 +163,14 @@ def ExportFile(filepath):
 			f.write("Material "+ material.name + "\n{\n")
 			if material.use_nodes == False:
 				f.write("# Material doesn't use nodes doing best to export properties \n")
-				f.write(str(material.diffuse_color[0]) + ";" + str(material.diffuse_color[1]) + ";" + str(material.diffuse_color[2]) + ";" + str(material.diffuse_color[3]) + ";\n")
+				f.write(str(material.diffuse_color[0]) + ";" + str(material.diffuse_color[1]) + ";" + str(material.diffuse_color[2]) + ";" + str(material.diffuse_color[3]) + ";;\n")
 				f.write(str(material.specular_intensity) + ";\n")
 				# PROBLEM: Non- node materials in Blender have no specular colour
-				#f.write(str(material.specular_color[0]) + ";" + str(material.specular_color[1]) + ";" + str(material.specular_color[2]) + ";" + str(material.specular_color[3]) + ";\n")
-				f.write(str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";\n")
+				#f.write(str(material.specular_color[0]) + ";" + str(material.specular_color[1]) + ";" + str(material.specular_color[2]) + ";" + str(material.specular_color[3]) + ";;\n")
+				f.write(str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";;\n")
 				# PROBLEM: Non-node materials in Blender have no emissive colour
-				#f.write(str(material.emissive_color[0]) + ";" + str(material.emissive_color[1]) + ";" + str(material.emissive_color[2]) + ";" + str(material.emissive_color[3]) + ";\n")
-				f.write(str(0) + ";" + str(0) + ";" + str(0) + ";" + str(0) + ";\n")
+				#f.write(str(material.emissive_color[0]) + ";" + str(material.emissive_color[1]) + ";" + str(material.emissive_color[2]) + ";" + str(material.emissive_color[3]) + ";;\n")
+				f.write(str(0.0) + ";" + str(0.0) + ";" + str(0.0) + ";;\n")
 			else:
 				f.write("# Exporter deliberately and only supports the Specular Material Node in the Shader Graph \n")
 				#specularNode = node for node in material.node_tree.nodes if node.type == ""
@@ -138,22 +190,22 @@ def ExportFile(filepath):
 						specularColor[0] = colorSocket.default_value[0]
 						specularColor[1] = colorSocket.default_value[1]
 						specularColor[2] = colorSocket.default_value[2]
-						specularColor[3] = colorSocket.default_value[3]
+						#specularColor[3] = colorSocket.default_value[3]
 						floatSocket = node.inputs[2]
 						power = floatSocket.default_value
 						colorSocket = node.inputs[3]
 						emissiveColor[0] = colorSocket.default_value[0]
 						emissiveColor[1] = colorSocket.default_value[1]
 						emissiveColor[2] = colorSocket.default_value[2]
-						emissiveColor[3] = colorSocket.default_value[3]
+						#emissiveColor[3] = colorSocket.default_value[3]
 					if node.type == 'TEX_IMAGE':
 						image = node.image
 						if image != None:
 							filename = image.filepath
-				f.write(str(faceColor[0]) + "," + str(faceColor[1]) + "," + str(faceColor[2]) + "," + str(faceColor[3]) + ";\n")
+				f.write(str(faceColor[0]) + ";" + str(faceColor[1]) + ";" + str(faceColor[2]) + ";" + str(faceColor[3]) + ";;\n")
 				f.write(str(power) + ";\n")
-				f.write(str(specularColor[0]) + "," + str(specularColor[1]) + "," + str(specularColor[2]) + "," + str(specularColor[3]) + ";\n")
-				f.write(str(emissiveColor[0]) + "," + str(emissiveColor[1]) + "," + str(emissiveColor[2]) + "," + str(emissiveColor[3]) + ";\n")
+				f.write(str(specularColor[0]) + ";" + str(specularColor[1]) + ";" + str(specularColor[2]) + ";;\n")
+				f.write(str(emissiveColor[0]) + ";" + str(emissiveColor[1]) + ";" + str(emissiveColor[2]) + ";;\n")
 			if len(filename):
 				f.write("TextureFilename\n{\n")
 				f.write(filename + ";\n")
