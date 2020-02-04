@@ -28,24 +28,55 @@ import bpy
 
 # TODO: Support for vertex colours via mesh.vertex_colors
 # TODO: Support for vertex UVs
+# TODO: I need to figure out how to do parented meshes (nested transforms)
 
 def ExportFile(filepath):
-	print("Exporting File " + filepath)
-	
+	# Send a message to the console
+	print("Exporting File: " + filepath)
+	# Open the file for export
 	f = open(filepath, "w", encoding="utf8", newline="\n")
-
 	# Write the File Header to the file
 	WriteHeader(f)
 	# Write all the Template Boiler plate to the file
-	WriteBoilerPlate(f)
-	
-	# Write a list of all meshes in the scene
-	for mesh in bpy.data.meshes:
+	WriteBoilerPlate(f)	
+	# Go through all the objects in the scene
+	for object in bpy.data.objects:
+		# If the object type isn't a mesh then goto the next object
+		if object.type != 'MESH':
+			continue
+		# Grab the Mesh from the Object
+		mesh = object.data
+		# Write the Object Name
+		f.write("# " + object.name + "\n")
 		f.write("Frame\n{\n")
-		## TODO: Figure out how to get the object's world transform
-		#f.write("FrameTransformMatrix\n{\n")
-		#f.write("#TODO: Implement me\n")
-		#f.write("}\n")
+		# Write the FrameTransformationMatrix
+		f.write("FrameTransformMatrix\n{\n")
+		# Grab the Matrix
+		matrix = object.matrix_world
+		# TODO: Figure out how to convert the matrix correctly
+		## Convert the Matrix from Right Handed (Blender) to Left Handed (Blender)
+		#matrix[3][2] *= -1;
+		#matrix[1][2] *= -1;
+		#matrix[2][1] *= -1;
+		#matrix[0][2] *= -1;
+		#matrix[2][0] *= -1;
+		## Swap y and z
+		#temp = matrix[1][3]
+		#matrix[1][3] = matrix[2][3]
+		#matrix[2][3] = temp
+		matrix.transpose()
+		# Write the Matrix
+		for j in range(0, 4):
+			for i in range(0, 4):
+				f.write(str(matrix[j][i]))
+				if j == 3 and i == 3:
+					f.write(";;")
+				else:
+					f.write(",")
+			f.write("\n")
+		f.write("}\n")
+		matrix.transpose()
+		# Write the Mesh
 		f.write("Mesh " + mesh.name + "\n{" + "\n")
 		# Grab the Number of Vertices
 		mesh_verts = mesh.vertices[:]
@@ -57,7 +88,8 @@ def ExportFile(filepath):
 		for i in range(len(mesh_verts)):
 			# TODO: Do I need to apply the Mesh transform here?
 			vert = mesh_verts[i]
-			f.write(str(vert.co[0]) + ";" + str(vert.co[1]) + ";" + str(vert.co[2]))
+			# Here I swap the Y and Z Axis
+			f.write(str(vert.co[0]) + ";" + str(vert.co[2]) + ";" + str(vert.co[1]))
 			if i == (len(mesh_verts) - 1):
 				f.write(str(len(mesh_verts)) + ";;\n")
 			else:
@@ -94,10 +126,10 @@ def ExportFile(filepath):
 				# TODO: This is incorrect needs to be normals for each vertex in the polygon
 				# I don't know how to get the per polygon vertex normal which should
 				# in theory be how soft surfaces are described. At present only hard
-				# surfaces are supported
+				# surfaces are supported. NOTE: Normals are not working yet!
 				f.write(str(polygon.normal[0]) + ";")
-				f.write(str(polygon.normal[1]) + ";")
 				f.write(str(polygon.normal[2]) + ";")
+				f.write(str(polygon.normal[1]) + ";")
 				if polygon == mesh_polygons[-1]:
 					if vertex == polygon.vertices[-1]:
 						f.write(";")
@@ -107,8 +139,8 @@ def ExportFile(filepath):
 					f.write(",")
 				f.write("\n")
 				#f.write(str(polygon.vertices[vertex].normal[0]) + ";")
-				#f.write(str(polygon.vertices[vertex].normal[1]) + ";")
 				#f.write(str(polygon.vertices[vertex].normal[2]) + ";")
+				#f.write(str(polygon.vertices[vertex].normal[1]) + ";")
 				#f.write(",")
 				#f.write("\n")
 		f.write("\n")
@@ -208,7 +240,7 @@ def ExportFile(filepath):
 				f.write(str(emissiveColor[0]) + ";" + str(emissiveColor[1]) + ";" + str(emissiveColor[2]) + ";;\n")
 			if len(filename):
 				f.write("TextureFilename\n{\n")
-				f.write(filename + ";\n")
+				f.write("\"" + filename + "\"" + ";\n")
 				f.write("}\n")
 			f.write("}\n")
 		f.write("}" + "\n")
