@@ -24,6 +24,7 @@
 # sets the formatting requirements for this python file.
 # <pep8 compliant>
 
+import math
 import bpy
 
 # TODO: Support for vertex colours via mesh.vertex_colors
@@ -68,7 +69,7 @@ def ExportFile(filepath):
 		# Write the Matrix
 		for j in range(0, 4):
 			for i in range(0, 4):
-				f.write(str(matrix[j][i]))
+				f.write(str('%.6f' % matrix[j][i]))
 				if j == 3 and i == 3:
 					f.write(";;")
 				else:
@@ -89,7 +90,7 @@ def ExportFile(filepath):
 			# TODO: Do I need to apply the Mesh transform here?
 			vert = mesh_verts[i]
 			# Here I swap the Y and Z Axis
-			f.write(str(vert.co[0]) + ";" + str(vert.co[2]) + ";" + str(vert.co[1]))
+			f.write(str('%.6f' % vert.co[0]) + ";" + str('%.6f' % vert.co[2]) + ";" + str('%.6f' % vert.co[1]))
 			if i == (len(mesh_verts) - 1):
 				f.write(str(len(mesh_verts)) + ";;\n")
 			else:
@@ -127,9 +128,9 @@ def ExportFile(filepath):
 				# I don't know how to get the per polygon vertex normal which should
 				# in theory be how soft surfaces are described. At present only hard
 				# surfaces are supported. NOTE: Normals are not working yet!
-				f.write(str(polygon.normal[0]) + ";")
-				f.write(str(polygon.normal[2]) + ";")
-				f.write(str(polygon.normal[1]) + ";")
+				f.write(str('%.6f' % polygon.normal[0]) + ";")
+				f.write(str('%.6f' % polygon.normal[2]) + ";")
+				f.write(str('%.6f' % polygon.normal[1]) + ";")
 				if polygon == mesh_polygons[-1]:
 					if vertex == polygon.vertices[-1]:
 						f.write(";")
@@ -138,9 +139,9 @@ def ExportFile(filepath):
 				else:
 					f.write(",")
 				f.write("\n")
-				#f.write(str(polygon.vertices[vertex].normal[0]) + ";")
-				#f.write(str(polygon.vertices[vertex].normal[2]) + ";")
-				#f.write(str(polygon.vertices[vertex].normal[1]) + ";")
+				#f.write(str('%.6f' % polygon.vertices[vertex].normal[0]) + ";")
+				#f.write(str('%.6f' % polygon.vertices[vertex].normal[2]) + ";")
+				#f.write(str('%.6f' % polygon.vertices[vertex].normal[1]) + ";")
 				#f.write(",")
 				#f.write("\n")
 		f.write("\n")
@@ -195,14 +196,14 @@ def ExportFile(filepath):
 			f.write("Material "+ material.name + "\n{\n")
 			if material.use_nodes == False:
 				f.write("# Material doesn't use nodes doing best to export properties \n")
-				f.write(str(material.diffuse_color[0]) + ";" + str(material.diffuse_color[1]) + ";" + str(material.diffuse_color[2]) + ";" + str(material.diffuse_color[3]) + ";;\n")
-				f.write(str(material.specular_intensity) + ";\n")
+				f.write(str('%.6f' % material.diffuse_color[0]) + ";" + str('%.6f' % material.diffuse_color[1]) + ";" + str('%.6f' % material.diffuse_color[2]) + ";" + str('%.6f' % material.diffuse_color[3]) + ";;\n")
+				f.write(str('%.6f' % material.specular_intensity) + ";\n")
 				# PROBLEM: Non- node materials in Blender have no specular colour
-				#f.write(str(material.specular_color[0]) + ";" + str(material.specular_color[1]) + ";" + str(material.specular_color[2]) + ";" + str(material.specular_color[3]) + ";;\n")
-				f.write(str(1.0) + ";" + str(1.0) + ";" + str(1.0) + ";;\n")
+				#f.write(str('%.6f' % material.specular_color[0]) + ";" + str('%.6f' % material.specular_color[1]) + ";" + str('%.6f' % material.specular_color[2]) + ";" + str('%.6f' % material.specular_color[3]) + ";;\n")
+				f.write(str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";;\n")
 				# PROBLEM: Non-node materials in Blender have no emissive colour
-				#f.write(str(material.emissive_color[0]) + ";" + str(material.emissive_color[1]) + ";" + str(material.emissive_color[2]) + ";" + str(material.emissive_color[3]) + ";;\n")
-				f.write(str(0.0) + ";" + str(0.0) + ";" + str(0.0) + ";;\n")
+				#f.write(str('%.6f' % material.emissive_color[0]) + ";" + str('%.6f' % material.emissive_color[1]) + ";" + str('%.6f' % material.emissive_color[2]) + ";" + str('%.6f' % material.emissive_color[3]) + ";;\n")
+				f.write(str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";;\n")
 			else:
 				f.write("# Exporter deliberately and only supports the Specular Material Node in the Shader Graph \n")
 				#specularNode = node for node in material.node_tree.nodes if node.type == ""
@@ -234,14 +235,31 @@ def ExportFile(filepath):
 						image = node.image
 						if image != None:
 							filename = image.filepath
-				f.write(str(faceColor[0]) + ";" + str(faceColor[1]) + ";" + str(faceColor[2]) + ";" + str(faceColor[3]) + ";;\n")
-				f.write(str(power) + ";\n")
-				f.write(str(specularColor[0]) + ";" + str(specularColor[1]) + ";" + str(specularColor[2]) + ";;\n")
-				f.write(str(emissiveColor[0]) + ";" + str(emissiveColor[1]) + ";" + str(emissiveColor[2]) + ";;\n")
+				# Face Colour
+				f.write(str('%.6f' % faceColor[0]) + ";" + str('%.6f' % faceColor[1]) + ";" + str('%.6f' % faceColor[2]) + ";" + str('%.6f' % faceColor[3]) + ";;\n")
+				# Specular Cooefficient
+				f.write(str('%.6f' % power) + ";\n")
+				# Specular Colour
+				f.write(str('%.6f' % specularColor[0]) + ";" + str('%.6f' % specularColor[1]) + ";" + str('%.6f' % specularColor[2]) + ";;\n")
+				# Emissive Colour
+				f.write(str('%.6f' % emissiveColor[0]) + ";" + str('%.6f' % emissiveColor[1]) + ";" + str('%.6f' % emissiveColor[2]) + ";;\n")
 			if len(filename):
 				f.write("TextureFilename\n{\n")
 				f.write("\"" + filename + "\"" + ";\n")
 				f.write("}\n")
+			f.write("}\n")
+		# If there are no materials then use a default one
+		if len(mesh_materials) == 0:
+			# Create the default Material Node give it a name TODO: Cannot have spaces investigate valid names
+			f.write("Material "+ "DefaultMaterial" + "\n{\n")
+			# Face Colour
+			f.write(str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";;\n")
+			# Specular Cooefficient
+			f.write(str('%.6f' % 2.0) + ";\n")
+			# Specular Colour
+			f.write(str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";;\n")
+			# Emissive Colour
+			f.write(str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";;\n")			
 			f.write("}\n")
 		f.write("}" + "\n")
 		f.write("}" + "\n")
