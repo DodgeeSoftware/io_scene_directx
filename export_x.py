@@ -25,7 +25,10 @@
 # <pep8 compliant>
 
 import math
+import mathutils
 import bpy
+
+from math import radians
 
 # TODO: Support for vertex colours via mesh.vertex_colors
 # TODO: Support for vertex UVs
@@ -52,31 +55,34 @@ def ExportFile(filepath):
 		f.write("Frame\n{\n")
 		# Write the FrameTransformationMatrix
 		f.write("FrameTransformMatrix\n{\n")
-		# Grab the Matrix
-		matrix = object.matrix_world
+		
 		# TODO: Figure out how to convert the matrix correctly
+		#finalMatrix = mathutils.Matrix(object.matrix_world)
+		translationMatrix = mathutils.Matrix.Translation((object.location[0], object.location[2], object.location[1]))
+		rotationXMatrix = mathutils.Matrix.Rotation(radians(object.rotation_euler[0]), 4, 'X')
+		rotationYMatrix = mathutils.Matrix.Rotation(radians(object.rotation_euler[2]), 4, 'Y')
+		rotationZMatrix = mathutils.Matrix.Rotation(radians(object.rotation_euler[1]), 4, 'Z')
+		scaleXMatrix = mathutils.Matrix.Scale(object.scale[0], 4, (1.0, 0.0, 0.0))
+		scaleYMatrix = mathutils.Matrix.Scale(object.scale[2], 4, (0.0, 1.0, 0.0))
+		scaleZMatrix = mathutils.Matrix.Scale(object.scale[1], 4, (0.0, 0.0, 1.0))
+		finalMatrix = translationMatrix @ rotationXMatrix @ rotationYMatrix @ rotationZMatrix @ scaleZMatrix @ scaleYMatrix @ scaleXMatrix
 		## Convert the Matrix from Right Handed (Blender) to Left Handed (Blender)
-		#matrix[3][2] *= -1;
-		#matrix[1][2] *= -1;
-		#matrix[2][1] *= -1;
-		#matrix[0][2] *= -1;
-		#matrix[2][0] *= -1;
-		## Swap y and z
-		#temp = matrix[1][3]
-		#matrix[1][3] = matrix[2][3]
-		#matrix[2][3] = temp
-		matrix.transpose()
+		#finalMatrix[3][2] *= -1;
+		#finalMatrix[1][2] *= -1;
+		#finalMatrix[2][1] *= -1;
+		#finalMatrix[0][2] *= -1;
+		#finalMatrix[2][0] *= -1;
+		finalMatrix.transpose()
 		# Write the Matrix
 		for j in range(0, 4):
 			for i in range(0, 4):
-				f.write(str('%.6f' % matrix[j][i]))
+				f.write(str('%.6f' % finalMatrix[j][i]))
 				if j == 3 and i == 3:
 					f.write(";;")
 				else:
 					f.write(",")
 			f.write("\n")
 		f.write("}\n")
-		matrix.transpose()
 		# Write the Mesh
 		f.write("Mesh " + mesh.name + "\n{" + "\n")
 		# Grab the Number of Vertices
