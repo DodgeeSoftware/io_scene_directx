@@ -55,25 +55,37 @@ def ExportFile(filepath):
 		f.write("Frame\n{\n")
 		# Write the FrameTransformationMatrix
 		f.write("FrameTransformMatrix\n{\n")
+		translationMatrix = mathutils.Matrix.Translation((object.location[0], object.location[2], object.location[1]))
 		
-		# TODO: Figure out how to convert the matrix correctly
-		#finalMatrix = mathutils.Matrix(object.matrix_world)
-		translationMatrix = mathutils.Matrix.Identity(4) #mathutils.Matrix.Translation((object.location[0], object.location[2], object.location[1]))
-		rotationXMatrix = mathutils.Matrix.Identity(4) #mathutils.Matrix.Rotation((object.rotation_euler[0]), 4, 'X')
-		rotationYMatrix = mathutils.Matrix.Identity(4) #mathutils.Matrix.Rotation((-object.rotation_euler[2]), 4, 'Y')
-		rotationZMatrix = mathutils.Matrix.Identity(4) #mathutils.Matrix.Rotation((object.rotation_euler[1]), 4, 'Z')
-		scaleXMatrix = mathutils.Matrix.Identity(4) #mathutils.Matrix.Scale(object.scale[0], 4, (1.0, 0.0, 0.0))
-		scaleYMatrix = mathutils.Matrix.Identity(4) #mathutils.Matrix.Scale(object.scale[2], 4, (0.0, 1.0, 0.0))
-		scaleZMatrix = mathutils.Matrix.Identity(4) #mathutils.Matrix.Scale(object.scale[1], 4, (0.0, 0.0, 1.0))
+		#rotationXMatrix = mathutils.Matrix.Rotation((object.rotation_euler[0]), 4, 'X')
+		rotationXMatrix = mathutils.Matrix.Identity(4)
+		rotationXMatrix[1][1] = math.cos(-object.rotation_euler[0])
+		rotationXMatrix[1][2] = -math.sin(-object.rotation_euler[0])
+		rotationXMatrix[2][1] = math.sin(-object.rotation_euler[0])
+		rotationXMatrix[2][2] = math.cos(-object.rotation_euler[0])
+
+		#rotationYMatrix = mathutils.Matrix.Rotation((object.rotation_euler[2]), 4, 'Y')
+		rotationYMatrix = mathutils.Matrix.Identity(4)
+		rotationYMatrix[0][0] = math.cos(-object.rotation_euler[2])
+		rotationYMatrix[0][2] = math.sin(-object.rotation_euler[2])
+		rotationYMatrix[2][0] = -math.sin(-object.rotation_euler[2])
+		rotationYMatrix[2][2] = math.cos(-object.rotation_euler[2])
+		
+		#rotationZMatrix = mathutils.Matrix.Rotation((object.rotation_euler[1]), 4, 'Z')
+		rotationZMatrix = mathutils.Matrix.Identity(4)
+		rotationZMatrix[0][0] = math.cos(-object.rotation_euler[1])
+		rotationZMatrix[0][1] = -math.sin(-object.rotation_euler[1])
+		rotationZMatrix[1][0] = math.sin(-object.rotation_euler[1])
+		rotationZMatrix[1][1] = math.cos(-object.rotation_euler[1])
+		
+		scaleXMatrix = mathutils.Matrix.Scale(object.scale[0], 4, (1.0, 0.0, 0.0))
+		scaleYMatrix = mathutils.Matrix.Scale(object.scale[2], 4, (0.0, 1.0, 0.0))
+		scaleZMatrix = mathutils.Matrix.Scale(object.scale[1], 4, (0.0, 0.0, 1.0))
+		
 		finalMatrix = mathutils.Matrix(translationMatrix @ rotationXMatrix @ rotationYMatrix @ rotationZMatrix @ scaleXMatrix @ scaleYMatrix @ scaleZMatrix)
-		## Convert the Matrix from Right Handed (Blender) to Left Handed (Blender)
-		#finalMatrix[3][2] *= -1;
-		#finalMatrix[1][2] *= -1;
-		#finalMatrix[2][1] *= -1;
-		#finalMatrix[0][2] *= -1;
-		#finalMatrix[2][0] *= -1;
-		#m = mathutils.Matrix.Identity(4)
+		
 		finalMatrix.transpose()
+		
 		# Write the Matrix
 		for j in range(0, 4):
 			for i in range(0, 4):
@@ -96,8 +108,8 @@ def ExportFile(filepath):
 		for i in range(len(mesh_verts)):
 			# TODO: Do I need to apply the Mesh transform here?
 			vert = mesh_verts[i]
-			# Here I swap the Y and Z Axis
-			f.write(str('%.6f' % vert.co[0]) + ";" + str('%.6f' % -vert.co[2]) + ";" + str('%.6f' % vert.co[1]))
+			# Here I swap the Y and Z Axis and make z negative
+			f.write(str('%.6f' % vert.co[0]) + ";" + str('%.6f' % vert.co[2]) + ";" + str('%.6f' % (vert.co[1])))
 			if i == (len(mesh_verts) - 1):
 				f.write(str(len(mesh_verts)) + ";;\n")
 			else:
