@@ -221,7 +221,10 @@ def ExportFile(filepath):
 		f.write(str(len(mesh_materials)) + ";\n")
 		f.write(str(len(mesh_polygons)) +";\n")
 		for polygon in mesh_polygons:
-			f.write(str(polygon.material_index) +",\n")			
+			if polygon == mesh_polygons[-1]:
+				f.write(str(polygon.material_index) +";\n")
+			else:
+				f.write(str(polygon.material_index) +",\n")
 		for material in mesh_materials:
 			f.write("Material "+ material.name + "\n{\n")
 			if material.use_nodes == False:
