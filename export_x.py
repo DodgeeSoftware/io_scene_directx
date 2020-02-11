@@ -83,6 +83,7 @@ def ExportFile(filepath):
 		scaleZMatrix = mathutils.Matrix.Scale(object.scale[1], 4, (0.0, 0.0, 1.0))
 		
 		finalMatrix = mathutils.Matrix(translationMatrix @ rotationXMatrix @ rotationYMatrix @ rotationZMatrix @ scaleXMatrix @ scaleYMatrix @ scaleZMatrix)
+		normalMatrix = mathutils.Matrix(rotationXMatrix @ rotationYMatrix @ rotationZMatrix)
 		
 		finalMatrix.transpose()
 		
@@ -119,9 +120,9 @@ def ExportFile(filepath):
 		f.write(str(len(mesh_polygons)) +";\n")
 		for polygon in mesh_polygons:
 			f.write(str(len(polygon.vertices)) + ";")
-			for vertex in polygon.vertices:
-				f.write(str(vertex))
-				if vertex == polygon.vertices[-1]:
+			for index in range(len(polygon.vertices) - 1, -1, -1):
+				f.write(str(polygon.vertices[index]))
+				if index == polygon.vertices[0]:
 					f.write(";")
 				else:
 					f.write(",")
@@ -147,9 +148,18 @@ def ExportFile(filepath):
 				# I don't know how to get the per polygon vertex normal which should
 				# in theory be how soft surfaces are described. At present only hard
 				# surfaces are supported. NOTE: Normals are not working yet!
-				f.write(str('%.6f' % polygon.normal[0]) + ";")
-				f.write(str('%.6f' % polygon.normal[2]) + ";")
-				f.write(str('%.6f' % polygon.normal[1]) + ";")
+				
+				normal = normalMatrix @ polygon.normal
+				
+				f.write(str('%.6f' % normal.x) + ";")
+				f.write(str('%.6f' % normal.z) + ";")
+				f.write(str('%.6f' % -normal.y) + ";")				
+				#f.write(str('%.6f' % polygon.normal.x) + ";")
+				#f.write(str('%.6f' % polygon.normal.z) + ";")
+				#f.write(str('%.6f' % polygon.normal.y) + ";")
+				#f.write(str('%.6f' % mesh.vertices[vertex].normal.x) + ";")
+				#f.write(str('%.6f' % mesh.vertices[vertex].normal.y) + ";")
+				#f.write(str('%.6f' % mesh.vertices[vertex].normal.z) + ";")
 				if polygon == mesh_polygons[-1]:
 					if vertex == polygon.vertices[-1]:
 						f.write(";")
@@ -158,6 +168,7 @@ def ExportFile(filepath):
 				else:
 					f.write(",")
 				f.write("\n")
+				#f.write(str('%.6f' % mesh.vertices[vertex].normal.x) + ";")
 				#f.write(str('%.6f' % polygon.vertices[vertex].normal[0]) + ";")
 				#f.write(str('%.6f' % polygon.vertices[vertex].normal[2]) + ";")
 				#f.write(str('%.6f' % polygon.vertices[vertex].normal[1]) + ";")
@@ -168,9 +179,9 @@ def ExportFile(filepath):
 		f.write(str(len(mesh_polygons)) +";\n")
 		for polygon in mesh_polygons:
 			f.write(str(len(polygon.vertices)) + ";")
-			for vertex in polygon.vertices:
-				f.write(str(vertex))
-				if vertex == polygon.vertices[-1]:
+			for index in range(len(polygon.vertices) - 1, -1, -1):
+				f.write(str(polygon.vertices[index]))
+				if index == polygon.vertices[0]:
 					f.write(";")
 				else:
 					f.write(",")
