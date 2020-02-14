@@ -103,26 +103,73 @@ def ExportFile(filepath):
 		mesh_verts = mesh.vertices[:]
 		# Grab the Number of Polygons
 		mesh_polygons = mesh.polygons[:]
+		# Count the Number of vertices
+		vertexCount = 0
+		for polygon in mesh_polygons:
+			for vertex in polygon.vertices:
+				vertexCount = vertexCount + 1
 		# Write the Vertex Count
-		f.write(str(len(mesh_verts)) + ";\n")
-		# Write the Vertices in the mesh
-		for i in range(len(mesh_verts)):
-			# TODO: Do I need to apply the Mesh transform here?
-			vert = mesh_verts[i]
-			# Here I swap the Y and Z Axis and make z negative
-			f.write(str('%.6f' % vert.co[0]) + ";" + str('%.6f' % vert.co[2]) + ";" + str('%.6f' % (vert.co[1])))
-			if i == (len(mesh_verts) - 1):
-				f.write(str(len(mesh_verts)) + ";;\n")
-			else:
-				f.write(str(len(mesh_verts)) + ";,\n")
+		f.write(str(vertexCount) + ";\n")
+
+		# Go through all the polygons in the mesh
+		subscriptOffset = 0
+		for polygon in mesh_polygons:
+			# Go through all the vertices in the polygon
+			for i in range(len(polygon.vertices)):
+				# Grab the vertex
+				vertex = mesh_verts[polygon.vertices[i]]
+				# Here I swap the Y and Z Axis and make z negative
+				f.write(str('%.6f' % vertex.co[0]) + ";" + str('%.6f' % vertex.co[2]) + ";" + str('%.6f' % (vertex.co[1])))
+				# if we are at the last polygon and vertex write a double semicolon
+				if polygon == mesh_polygons[-1] and i == (len(polygon.vertices) - 1):
+					f.write(str(len(mesh_verts)) + ";;\n")
+				else:
+					f.write(str(len(mesh_verts)) + ";,\n")
+			# Increment our subscripts
+			subscriptOffset += len(polygon.vertices)
 		f.write("\n")
+
+		### Write the Vertex Count
+		##f.write(str(len(mesh_verts)) + ";\n")
+		## Write the Vertices in the mesh
+		#for i in range(len(mesh_verts)):
+			## TODO: Do I need to apply the Mesh transform here?
+			#vert = mesh_verts[i]
+			## Here I swap the Y and Z Axis and make z negative
+			#f.write(str('%.6f' % vert.co[0]) + ";" + str('%.6f' % vert.co[2]) + ";" + str('%.6f' % (vert.co[1])))
+			#if i == (len(mesh_verts) - 1):
+				#f.write(str(len(mesh_verts)) + ";;\n")
+			#else:
+				#f.write(str(len(mesh_verts)) + ";,\n")
+		#f.write("\n")
+
+		## Write the Number of Polygons
+		#f.write(str(len(mesh_polygons)) +";\n")
+		#for polygon in mesh_polygons:
+			#f.write(str(len(polygon.vertices)) + ";")
+			#for index in range(len(polygon.vertices) - 1, -1, -1):
+				#f.write(str(polygon.vertices[index]))
+				#if index == 0:
+					#f.write(";")
+				#else:
+					#f.write(",")
+			#if polygon == mesh_polygons[-1]:
+				#f.write(";")
+			#else:
+				#f.write(",")
+			#f.write("\n")
+		#f.write("\n")
+		
 		# Write the Number of Polygons
 		f.write(str(len(mesh_polygons)) +";\n")
+		# Write the Polygons
+		subscriptOffset = 0
 		for polygon in mesh_polygons:
 			f.write(str(len(polygon.vertices)) + ";")
-			for index in range(len(polygon.vertices) - 1, -1, -1):
-				f.write(str(polygon.vertices[index]))
-				if index == polygon.vertices[0]:
+			for index in range(0, len(polygon.vertices)):
+				indice = (subscriptOffset + (len(polygon.vertices) - 1) - index)
+				f.write(str(indice))
+				if index == len(polygon.vertices) - 1:
 					f.write(";")
 				else:
 					f.write(",")
@@ -130,6 +177,7 @@ def ExportFile(filepath):
 				f.write(";")
 			else:
 				f.write(",")
+			subscriptOffset = subscriptOffset + len(polygon.vertices)
 			f.write("\n")
 		f.write("\n")
 		
@@ -177,11 +225,14 @@ def ExportFile(filepath):
 		f.write("\n")
 		# Write the Number of Polygons
 		f.write(str(len(mesh_polygons)) +";\n")
+		# Write the Polygons
+		subscriptOffset = 0
 		for polygon in mesh_polygons:
 			f.write(str(len(polygon.vertices)) + ";")
-			for index in range(len(polygon.vertices) - 1, -1, -1):
-				f.write(str(polygon.vertices[index]))
-				if index == polygon.vertices[0]:
+			for index in range(0, len(polygon.vertices)):
+				indice = (subscriptOffset + (len(polygon.vertices) - 1) - index)
+				f.write(str(indice))
+				if index == len(polygon.vertices) - 1:
 					f.write(";")
 				else:
 					f.write(",")
@@ -189,6 +240,7 @@ def ExportFile(filepath):
 				f.write(";")
 			else:
 				f.write(",")
+			subscriptOffset = subscriptOffset + len(polygon.vertices)
 			f.write("\n")
 		f.write("}\n")
 		
@@ -220,11 +272,11 @@ def ExportFile(filepath):
 		# Write the number of materials used by this mesh
 		f.write(str(len(mesh_materials)) + ";\n")
 		f.write(str(len(mesh_polygons)) +";\n")
-		for polygon in mesh_polygons:
-			if polygon == mesh_polygons[-1]:
-				f.write(str(polygon.material_index) +";\n")
+		for index in range(len(mesh_polygons) - 1, -1, -1):
+			if index == 0:
+				f.write(str(mesh_polygons[index].material_index) +";\n")
 			else:
-				f.write(str(polygon.material_index) +",\n")
+				f.write(str(mesh_polygons[index].material_index) +",\n")
 		for material in mesh_materials:
 			f.write("Material "+ material.name + "\n{\n")
 			if material.use_nodes == False:
@@ -304,8 +356,8 @@ def ExportFile(filepath):
 
 def WriteHeader(f):
 	f.write("xof 0302txt 0032\n")
-	f.write("Header {1; 0; 1;}\n")
-	f.write("\n")
+	#f.write("Header {1; 0; 1;}\n") # TODO: This really isn't necessary should we remove this?
+	#f.write("\n")
 	f.write("# Created by DodgeeSoftware's DirectX Model Exporter\n")
 	f.write("# Website: www.dodgeesoftware.com\n")
 	f.write("# Email: info@dodgeesoftware.com\n")
