@@ -82,8 +82,8 @@ def ExportFile(filepath):
 		scaleYMatrix = mathutils.Matrix.Scale(object.scale[2], 4, (0.0, 1.0, 0.0))
 		scaleZMatrix = mathutils.Matrix.Scale(object.scale[1], 4, (0.0, 0.0, 1.0))
 		
-		finalMatrix = mathutils.Matrix(translationMatrix @ rotationXMatrix @ rotationYMatrix @ rotationZMatrix @ scaleXMatrix @ scaleYMatrix @ scaleZMatrix)
-		normalMatrix = mathutils.Matrix(rotationXMatrix @ rotationYMatrix @ rotationZMatrix)
+		finalMatrix = mathutils.Matrix(translationMatrix @ rotationYMatrix @ rotationZMatrix @ rotationXMatrix @scaleXMatrix @ scaleYMatrix @ scaleZMatrix)
+		normalMatrix = mathutils.Matrix(rotationYMatrix @ rotationZMatrix @ rotationXMatrix)
 		
 		finalMatrix.transpose()
 		
