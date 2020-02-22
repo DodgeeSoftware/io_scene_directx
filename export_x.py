@@ -118,7 +118,7 @@ def ExportFile(filepath):
 			for i in range(len(polygon.vertices)):
 				# Grab the vertex
 				vertex = mesh_verts[polygon.vertices[i]]
-				# Here I swap the Y and Z Axis and make z negative
+				# Here I swap the Y and Z Axis
 				f.write(str('%.6f' % vertex.co[0]) + ";" + str('%.6f' % vertex.co[2]) + ";" + str('%.6f' % (vertex.co[1])))
 				# if we are at the last polygon and vertex write a double semicolon
 				if polygon == mesh_polygons[-1] and i == (len(polygon.vertices) - 1):
@@ -201,7 +201,7 @@ def ExportFile(filepath):
 				
 				f.write(str('%.6f' % normal.x) + ";")
 				f.write(str('%.6f' % normal.z) + ";")
-				f.write(str('%.6f' % -normal.y) + ";")				
+				f.write(str('%.6f' % normal.y) + ";")				
 				#f.write(str('%.6f' % polygon.normal.x) + ";")
 				#f.write(str('%.6f' % polygon.normal.z) + ";")
 				#f.write(str('%.6f' % polygon.normal.y) + ";")
