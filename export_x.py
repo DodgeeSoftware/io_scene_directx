@@ -112,7 +112,6 @@ def ExportFile(filepath):
 				vertexCount = vertexCount + 1
 		# Write the Vertex Count
 		f.write(str(vertexCount) + ";\n")
-
 		# Go through all the polygons in the mesh
 		subscriptOffset = 0
 		for polygon in mesh_polygons:
@@ -210,9 +209,9 @@ def ExportFile(filepath):
 			subscriptOffset = 0
 			for polygon in mesh_polygons:
 				for index in range(0, len(polygon.vertices)):
-					indice = (subscriptOffset + (len(polygon.vertices) - 1) - index)
+					indice = (subscriptOffset + index)
 					meshUVLoop = mesh.uv_layers.active.data[indice]
-					f.write(str(1.0 - meshUVLoop.uv[0]))
+					f.write(str(meshUVLoop.uv[0]))
 					f.write(";")
 					f.write(str(1.0 - meshUVLoop.uv[1]))
 					f.write(";")
