@@ -25,13 +25,12 @@
 # <pep8 compliant>
 
 import math
+from math import radians
 import mathutils
 import bpy
 
-from math import radians
 
 # TODO: Support for vertex colours via mesh.vertex_colors
-# TODO: Support for vertex UVs
 # TODO: I need to figure out how to do parented meshes (nested transforms)
 
 def ExportFile(filepath):
@@ -55,38 +54,41 @@ def ExportFile(filepath):
 		f.write("Frame\n{\n")
 		# Write the FrameTransformationMatrix
 		f.write("FrameTransformMatrix\n{\n")
+		# Translation Matrix
 		translationMatrix = mathutils.Matrix.Translation((object.location[0], object.location[2], object.location[1]))
-		
+		# Rotation about the X Axis Matrix
 		#rotationXMatrix = mathutils.Matrix.Rotation((object.rotation_euler[0]), 4, 'X')
 		rotationXMatrix = mathutils.Matrix.Identity(4)
 		rotationXMatrix[1][1] = math.cos(-object.rotation_euler[0])
 		rotationXMatrix[1][2] = -math.sin(-object.rotation_euler[0])
 		rotationXMatrix[2][1] = math.sin(-object.rotation_euler[0])
 		rotationXMatrix[2][2] = math.cos(-object.rotation_euler[0])
-
+		# Rotation about the Y Axis Matrix
 		#rotationYMatrix = mathutils.Matrix.Rotation((object.rotation_euler[2]), 4, 'Y')
 		rotationYMatrix = mathutils.Matrix.Identity(4)
 		rotationYMatrix[0][0] = math.cos(-object.rotation_euler[2])
 		rotationYMatrix[0][2] = math.sin(-object.rotation_euler[2])
 		rotationYMatrix[2][0] = -math.sin(-object.rotation_euler[2])
 		rotationYMatrix[2][2] = math.cos(-object.rotation_euler[2])
-		
+		# Rotation about the Z Axis Matrix
 		#rotationZMatrix = mathutils.Matrix.Rotation((object.rotation_euler[1]), 4, 'Z')
 		rotationZMatrix = mathutils.Matrix.Identity(4)
 		rotationZMatrix[0][0] = math.cos(-object.rotation_euler[1])
 		rotationZMatrix[0][1] = -math.sin(-object.rotation_euler[1])
 		rotationZMatrix[1][0] = math.sin(-object.rotation_euler[1])
 		rotationZMatrix[1][1] = math.cos(-object.rotation_euler[1])
-		
+		# Scale Matrix
 		scaleXMatrix = mathutils.Matrix.Scale(object.scale[0], 4, (1.0, 0.0, 0.0))
 		scaleYMatrix = mathutils.Matrix.Scale(object.scale[2], 4, (0.0, 1.0, 0.0))
 		scaleZMatrix = mathutils.Matrix.Scale(object.scale[1], 4, (0.0, 0.0, 1.0))
-		
-		finalMatrix = mathutils.Matrix(translationMatrix @ rotationYMatrix @ rotationZMatrix @ rotationXMatrix @scaleXMatrix @ scaleYMatrix @ scaleZMatrix)
+		# Compute the final Model transformation matrix
+		finalMatrix = mathutils.Matrix(translationMatrix @ rotationYMatrix @ rotationZMatrix @ rotationXMatrix @scaleYMatrix @ scaleZMatrix @ scaleXMatrix)
+		# Compute the matrix to transform the normals
 		normalMatrix = mathutils.Matrix(rotationYMatrix @ rotationZMatrix @ rotationXMatrix)
-		
-		finalMatrix.transpose()
-		
+		# The DirectX format stores  matrices 
+		# in row major format so we transpose the
+		# matrix here before writing
+		finalMatrix.transpose()		
 		# Write the Matrix
 		for j in range(0, 4):
 			for i in range(0, 4):
@@ -129,37 +131,6 @@ def ExportFile(filepath):
 			subscriptOffset += len(polygon.vertices)
 		f.write("\n")
 
-		### Write the Vertex Count
-		##f.write(str(len(mesh_verts)) + ";\n")
-		## Write the Vertices in the mesh
-		#for i in range(len(mesh_verts)):
-			## TODO: Do I need to apply the Mesh transform here?
-			#vert = mesh_verts[i]
-			## Here I swap the Y and Z Axis and make z negative
-			#f.write(str('%.6f' % vert.co[0]) + ";" + str('%.6f' % vert.co[2]) + ";" + str('%.6f' % (vert.co[1])))
-			#if i == (len(mesh_verts) - 1):
-				#f.write(str(len(mesh_verts)) + ";;\n")
-			#else:
-				#f.write(str(len(mesh_verts)) + ";,\n")
-		#f.write("\n")
-
-		## Write the Number of Polygons
-		#f.write(str(len(mesh_polygons)) +";\n")
-		#for polygon in mesh_polygons:
-			#f.write(str(len(polygon.vertices)) + ";")
-			#for index in range(len(polygon.vertices) - 1, -1, -1):
-				#f.write(str(polygon.vertices[index]))
-				#if index == 0:
-					#f.write(";")
-				#else:
-					#f.write(",")
-			#if polygon == mesh_polygons[-1]:
-				#f.write(";")
-			#else:
-				#f.write(",")
-			#f.write("\n")
-		#f.write("\n")
-		
 		# Write the Number of Polygons
 		f.write(str(len(mesh_polygons)) +";\n")
 		# Write the Polygons
@@ -180,8 +151,7 @@ def ExportFile(filepath):
 			subscriptOffset = subscriptOffset + len(polygon.vertices)
 			f.write("\n")
 		f.write("\n")
-		
-		# TODO: Figure out how to apply the transforms to the normals
+
 		f.write("MeshNormals \n{\n")
 		# Calculate the Number of normals
 		numNormals = 0
@@ -192,22 +162,10 @@ def ExportFile(filepath):
 		f.write(str(numNormals) + ";\n")
 		for polygon in mesh_polygons:
 			for vertex in polygon.vertices:
-				# TODO: This is incorrect needs to be normals for each vertex in the polygon
-				# I don't know how to get the per polygon vertex normal which should
-				# in theory be how soft surfaces are described. At present only hard
-				# surfaces are supported. NOTE: Normals are not working yet!
-				
 				normal = normalMatrix @ polygon.normal
-				
 				f.write(str('%.6f' % normal.x) + ";")
 				f.write(str('%.6f' % normal.z) + ";")
-				f.write(str('%.6f' % normal.y) + ";")				
-				#f.write(str('%.6f' % polygon.normal.x) + ";")
-				#f.write(str('%.6f' % polygon.normal.z) + ";")
-				#f.write(str('%.6f' % polygon.normal.y) + ";")
-				#f.write(str('%.6f' % mesh.vertices[vertex].normal.x) + ";")
-				#f.write(str('%.6f' % mesh.vertices[vertex].normal.y) + ";")
-				#f.write(str('%.6f' % mesh.vertices[vertex].normal.z) + ";")
+				f.write(str('%.6f' % normal.y) + ";")
 				if polygon == mesh_polygons[-1]:
 					if vertex == polygon.vertices[-1]:
 						f.write(";")
@@ -216,12 +174,6 @@ def ExportFile(filepath):
 				else:
 					f.write(",")
 				f.write("\n")
-				#f.write(str('%.6f' % mesh.vertices[vertex].normal.x) + ";")
-				#f.write(str('%.6f' % polygon.vertices[vertex].normal[0]) + ";")
-				#f.write(str('%.6f' % polygon.vertices[vertex].normal[2]) + ";")
-				#f.write(str('%.6f' % polygon.vertices[vertex].normal[1]) + ";")
-				#f.write(",")
-				#f.write("\n")
 		f.write("\n")
 		# Write the Number of Polygons
 		f.write(str(len(mesh_polygons)) +";\n")
@@ -243,27 +195,34 @@ def ExportFile(filepath):
 			subscriptOffset = subscriptOffset + len(polygon.vertices)
 			f.write("\n")
 		f.write("}\n")
-		
-		## Do we have uv data?
-		#if len(mesh.uv_layers) > 0:
-			## NOTE: There can only be one active UVMap per mesh. This
-			## is set by the user in the interface.
-			#uvs = mesh.uv_layers.active.data[:]
-			### Write the Name of the UVMap
-			##f.write("# " + str(mesh.uv_layers.active.name) + "\n")
-			#f.write("MeshTextureCoords \n{\n")
-			## Calculate the Number of UVs
-			#numUVs = 0
-			#for polygon in mesh_polygons:
-				#for vertex in polygon.vertices:
-					#numUVs = numUVs + 1				
-			## Write the Number of UV Texture Coords we wills end to the file
-			#f.write(str(numUVs) + ";\n")
-			## Write the UV Coordinates			
-			#for polygon in mesh_polygons:
-				#for loop_index in range(polygon.loop_start, polygon.loop_start + polygon.loop_total):
-					#f.write(str(uvs[loop_index].uv[0]) + ";" + str(uvs[loop_index].uv[1]) + ";," + "\n")
-			#f.write("}\n")
+
+		# Do we have uv data?
+		if len(mesh.uv_layers) > 0:
+			# NOTE: There can only be one active UVMap per mesh. This
+			# is set by the user in the interface.
+			uvs = mesh.uv_layers.active.data[:]
+			# Write the Name of the UVMap
+			f.write("# " + str(mesh.uv_layers.active.name) + "\n")			
+			f.write("MeshTextureCoords \n{\n")
+			# Write the UV coords for faces
+			f.write(str(len(mesh.uv_layers.active.data[:])) + ";\n")
+			# Write the UVs for each face
+			subscriptOffset = 0
+			for polygon in mesh_polygons:
+				for index in range(0, len(polygon.vertices)):
+					indice = (subscriptOffset + (len(polygon.vertices) - 1) - index)
+					meshUVLoop = mesh.uv_layers.active.data[indice]
+					f.write(str(1.0 - meshUVLoop.uv[0]))
+					f.write(";")
+					f.write(str(1.0 - meshUVLoop.uv[1]))
+					f.write(";")
+					if index == len(polygon.vertices) - 1:
+						f.write(";")
+					else:
+						f.write(",")
+					f.write("\n")
+				subscriptOffset = subscriptOffset + len(polygon.vertices)			
+			f.write("}\n")
 
 		# Grab the Materials used by this mesh
 		mesh_materials = mesh.materials[:]		
@@ -272,22 +231,23 @@ def ExportFile(filepath):
 		# Write the number of materials used by this mesh
 		f.write(str(len(mesh_materials)) + ";\n")
 		f.write(str(len(mesh_polygons)) +";\n")
-		for index in range(len(mesh_polygons) - 1, -1, -1):
-			if index == 0:
+		for index in range(0, len(mesh_polygons), 1):
+			if index == len(mesh_polygons) - 1:
 				f.write(str(mesh_polygons[index].material_index) +";\n")
 			else:
 				f.write(str(mesh_polygons[index].material_index) +",\n")
+
 		for material in mesh_materials:
 			f.write("Material "+ material.name + "\n{\n")
 			if material.use_nodes == False:
-				f.write("# Material doesn't use nodes doing best to export properties \n")
+				f.write("# This material doesn't use nodes. Doing best to export properties anyway. \n")
+				# Write Diffuse Colour
 				f.write(str('%.6f' % material.diffuse_color[0]) + ";" + str('%.6f' % material.diffuse_color[1]) + ";" + str('%.6f' % material.diffuse_color[2]) + ";" + str('%.6f' % material.diffuse_color[3]) + ";;\n")
+				# Write specular cooeffiencnt
 				f.write(str('%.6f' % material.specular_intensity) + ";\n")
-				# PROBLEM: Non- node materials in Blender have no specular colour
-				#f.write(str('%.6f' % material.specular_color[0]) + ";" + str('%.6f' % material.specular_color[1]) + ";" + str('%.6f' % material.specular_color[2]) + ";" + str('%.6f' % material.specular_color[3]) + ";;\n")
+				# Non-node materials in Blender have no specular colour write a default one here (white)
 				f.write(str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";;\n")
-				# PROBLEM: Non-node materials in Blender have no emissive colour
-				#f.write(str('%.6f' % material.emissive_color[0]) + ";" + str('%.6f' % material.emissive_color[1]) + ";" + str('%.6f' % material.emissive_color[2]) + ";" + str('%.6f' % material.emissive_color[3]) + ";;\n")
+				# Non-node materials in Blender have no emissive colour write a default one here (black)
 				f.write(str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";;\n")
 			else:
 				f.write("# Exporter deliberately and only supports the Specular Material Node in the Shader Graph \n")
@@ -299,59 +259,65 @@ def ExportFile(filepath):
 				filename = ""
 				for node in material.node_tree.nodes:
 					if node.type == 'EEVEE_SPECULAR':
+						# Grab Diffuse colour
 						colorSocket = node.inputs[0]
 						faceColor[0] = colorSocket.default_value[0]
 						faceColor[1] = colorSocket.default_value[1]
 						faceColor[2] = colorSocket.default_value[2]
 						faceColor[3] = colorSocket.default_value[3]
 						colorSocket = node.inputs[1]
+						# Grab Specular colour
 						specularColor[0] = colorSocket.default_value[0]
 						specularColor[1] = colorSocket.default_value[1]
 						specularColor[2] = colorSocket.default_value[2]
-						#specularColor[3] = colorSocket.default_value[3]
 						floatSocket = node.inputs[2]
 						power = floatSocket.default_value
 						colorSocket = node.inputs[3]
+						# Grab Emissive colour
 						emissiveColor[0] = colorSocket.default_value[0]
 						emissiveColor[1] = colorSocket.default_value[1]
 						emissiveColor[2] = colorSocket.default_value[2]
-						#emissiveColor[3] = colorSocket.default_value[3]
+					# If there is a texture grab the filename
 					if node.type == 'TEX_IMAGE':
 						image = node.image
 						if image != None:
 							filename = image.filepath
-				# Face Colour
+				# Write the Diffuse Colour
 				f.write(str('%.6f' % faceColor[0]) + ";" + str('%.6f' % faceColor[1]) + ";" + str('%.6f' % faceColor[2]) + ";" + str('%.6f' % faceColor[3]) + ";;\n")
-				# Specular Cooefficient
+				# Write the Specular Cooefficient
 				f.write(str('%.6f' % power) + ";\n")
-				# Specular Colour
+				# Write the Specular Colour
 				f.write(str('%.6f' % specularColor[0]) + ";" + str('%.6f' % specularColor[1]) + ";" + str('%.6f' % specularColor[2]) + ";;\n")
-				# Emissive Colour
+				# Write the Emissive Colour
 				f.write(str('%.6f' % emissiveColor[0]) + ";" + str('%.6f' % emissiveColor[1]) + ";" + str('%.6f' % emissiveColor[2]) + ";;\n")
+			# If there is a texture write the TexutreFilename node to the file
 			if len(filename):
 				f.write("TextureFilename\n{\n")
 				f.write("\"" + filename + "\"" + ";\n")
 				f.write("}\n")
 			f.write("}\n")
 		# If there are no materials then use a default one
+		# the file format must define at least one material
+		# being material 0
 		if len(mesh_materials) == 0:
 			# Create the default Material Node give it a name TODO: Cannot have spaces investigate valid names
 			f.write("Material "+ "DefaultMaterial" + "\n{\n")
-			# Face Colour
+			# Write the Diffuse Colour
 			f.write(str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";;\n")
-			# Specular Cooefficient
+			# Write the Specular Cooefficient
 			f.write(str('%.6f' % 2.0) + ";\n")
-			# Specular Colour
+			# Write the Specular Colour
 			f.write(str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";;\n")
-			# Emissive Colour
+			# Write the Emissive Colour
 			f.write(str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";;\n")			
 			f.write("}\n")
 		f.write("}" + "\n")
 		f.write("}" + "\n")
 		f.write("}")
 		f.write("\n")
-
+	# Close the file
 	f.close()
+	# Complete the Export
 	return {'FINISHED'}
 
 def WriteHeader(f):
