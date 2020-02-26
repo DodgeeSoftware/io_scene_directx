@@ -151,6 +151,9 @@ def ExportFile(filepath):
 			f.write("\n")
 		f.write("\n")
 
+		# NOTE: We do NOT need to transform the normals.
+		# It seems that the frametransform is applied automatically
+		# to the normals		
 		f.write("MeshNormals \n{\n")
 		# Calculate the Number of normals
 		numNormals = 0
@@ -161,7 +164,8 @@ def ExportFile(filepath):
 		f.write(str(numNormals) + ";\n")
 		for polygon in mesh_polygons:
 			for vertex in polygon.vertices:
-				normal = normalMatrix @ polygon.normal
+				#normal = normalMatrix @ polygon.normal
+				normal = polygon.normal
 				f.write(str('%.6f' % normal.x) + ";")
 				f.write(str('%.6f' % normal.z) + ";")
 				f.write(str('%.6f' % normal.y) + ";")
