@@ -215,9 +215,9 @@ def ExportFile(filepath):
 				for index in range(0, len(polygon.vertices)):
 					indice = (subscriptOffset + index)
 					meshUVLoop = mesh.uv_layers.active.data[indice]
-					f.write(str(meshUVLoop.uv[0]))
+					f.write(str('%.6f' % meshUVLoop.uv[0]))
 					f.write(";")
-					f.write(str(1.0 - meshUVLoop.uv[1]))
+					f.write(str('%.6f' % (1.0 - meshUVLoop.uv[1])))
 					f.write(";")
 					if polygon == mesh_polygons[-1] and index == len(polygon.vertices) - 1:
 						f.write(";")
