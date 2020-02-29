@@ -219,7 +219,7 @@ def ExportFile(filepath):
 					f.write(";")
 					f.write(str(1.0 - meshUVLoop.uv[1]))
 					f.write(";")
-					if index == len(polygon.vertices) - 1:
+					if polygon == mesh_polygons[-1] and index == len(polygon.vertices) - 1:
 						f.write(";")
 					else:
 						f.write(",")
