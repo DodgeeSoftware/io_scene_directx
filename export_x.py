@@ -152,6 +152,10 @@ def ExportFile(filepath):
 			f.write("\n")
 		f.write("\n")
 
+		# TODO: Need to figure out how to provide support for per face vertex normals.
+		# there must be away to create them in blender then detect them in script
+		# and save them here when they exist. At the moment all polygons in a mesh
+		# are hard edges and this is wrong
 		# NOTE: We do NOT need to transform the normals.
 		# It seems that the frametransform is applied automatically
 		# to the normals		
@@ -225,7 +229,7 @@ def ExportFile(filepath):
 					else:
 						f.write(",")
 					f.write("\n")
-				subscriptOffset = subscriptOffset + len(polygon.vertices)			
+				subscriptOffset = subscriptOffset + len(polygon.vertices)
 			f.write("}\n")
 
 		# Grab the Materials used by this mesh
@@ -314,11 +318,48 @@ def ExportFile(filepath):
 			# Write the Specular Colour
 			f.write(str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";" + str('%.6f' % 1.0) + ";;\n")
 			# Write the Emissive Colour
-			f.write(str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";;\n")			
+			f.write(str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";" + str('%.6f' % 0.0) + ";;\n")
 			f.write("}\n")
 		f.write("}" + "\n")
-		f.write("}" + "\n")
-		f.write("}")
+		
+		# TODO: Only write this is we have bones in our scene
+		f.write("#XSkinMeshHeader { \n")
+		f.write("#1; # nMaxSkinWeightsPerVertex \n")
+		f.write("#3; # nMaxSkinWeightsPerFace \n")
+		f.write("#1; #nBones \n")
+		f.write("#}\n")
+		
+		# TODO: For each bone (are these nested?)
+		f.write("# SkinWeights {\n")
+		f.write("# \"BoneName\"; # name of the bone \n");
+		f.write("# 99; #verts in this skin \n")
+		f.write("# 99; #list of indices affected by this bone \n");
+		f.write("# 1.000000; #list of weights \n")
+		f.write("# 1.000000; #bone matrix \n")
+		f.write("# }\n")
+		
+		# TODO: Locate the exact place to put the skeleton info (bone heirachy)
+		f.write("# Frame BoneName #This is the name of this bone. The section parents the bones together {\n")
+		f.write("# FrameTransformMatrix { \n")
+		f.write("# 1.000000, 0.000000, 0.000000, 0.000000,\n")
+		f.write("# 0.000000, 1.000000, 0.000000, 0.000000,\n")
+		f.write("# 0.000000, 0.000000, 1.000000, 0.000000,\n")
+		f.write("# 0.000000, 0.000000, 0.000000, 1.000000,\n")
+		f.write("# }\n")
+		f.write("# }\n")
+		
+		f.write("}\n")
+		f.write("}\n")
+		f.write("\n")
+		f.write("# AnimationSet {\n")
+		f.write("# Animation {\n")
+		f.write("# }\n")
+		f.write("# AnimationKey {\n")
+		f.write("# keytype; \n")
+		f.write("# numberofkeys; \n")
+		f.write("# }\n")
+		f.write("# {" + "BoneName" + " }\n")
+		f.write("# }\n")
 		f.write("\n")
 	# Close the file
 	f.close()
