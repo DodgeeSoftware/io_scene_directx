@@ -28,6 +28,7 @@ import math
 from math import radians
 import mathutils
 import bpy
+from pathlib import Path
 
 
 # TODO: Support for vertex colours via mesh.vertex_colors
@@ -259,7 +260,7 @@ def ExportFile(filepath):
 				power = 200.0
 				specularColor = [1.0, 1.0, 1.0, 1.0]
 				emissiveColor = [0.0, 0.0, 0.0, 1.0]
-				filename = ""
+				filenameandpath = ""
 				for node in material.node_tree.nodes:
 					if node.type == 'EEVEE_SPECULAR':
 						# Grab Diffuse colour
@@ -280,11 +281,11 @@ def ExportFile(filepath):
 						emissiveColor[0] = colorSocket.default_value[0]
 						emissiveColor[1] = colorSocket.default_value[1]
 						emissiveColor[2] = colorSocket.default_value[2]
-					# If there is a texture grab the filename
+					# If there is a texture grab the filenameandpath
 					if node.type == 'TEX_IMAGE':
 						image = node.image
 						if image != None:
-							filename = image.filepath
+							filenameandpath = image.filepath
 				# Write the Diffuse Colour
 				f.write(str('%.6f' % faceColor[0]) + ";" + str('%.6f' % faceColor[1]) + ";" + str('%.6f' % faceColor[2]) + ";" + str('%.6f' % faceColor[3]) + ";;\n")
 				# Write the Specular Cooefficient
@@ -294,9 +295,10 @@ def ExportFile(filepath):
 				# Write the Emissive Colour
 				f.write(str('%.6f' % emissiveColor[0]) + ";" + str('%.6f' % emissiveColor[1]) + ";" + str('%.6f' % emissiveColor[2]) + ";;\n")
 			# If there is a texture write the TexutreFilename node to the file
-			if len(filename):
+			if len(filenameandpath):
 				f.write("TextureFilename\n{\n")
-				f.write("\"" + filename + "\"" + ";\n")
+				#TODO: extract the filename from the filenameandpath
+				f.write("\"" + Path(filenameandpath).name + "\"" + ";\n")
 				f.write("}\n")
 			f.write("}\n")
 		# If there are no materials then use a default one
