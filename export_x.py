@@ -324,24 +324,30 @@ def ExportFile(filepath):
 		
 		armature = object.modifiers["Armature"].object
 		if armature is not None:
-			#boneCount = len(armature.bones.items())
+			armature = object.modifiers["Armature"].object.data
+			boneCount = len(armature.bones.items())
 			# TODO: Only write this is we have bones in our scene
 
 			f.write("#XSkinMeshHeader { \n")
-			f.write("#1; # nMaxSkinWeightsPerVertex \n")
-			f.write("#3; # nMaxSkinWeightsPerFace \n")
-			f.write("#1; #nBones \n")
-			#f.write("#" + str(boneCount) + "; #nBones \n")
+			f.write("#" + str(boneCount) + ";" + " #nMaxSkinWeightsPerVertex \n")
+			f.write("#" + str(boneCount) + ";" + " #nMaxSkinWeightsPerFace \n")
+			f.write("#" + str(boneCount) + ";" + " #nBones \n")
 			f.write("#}\n")
 			
-			# TODO: For each bone (are these nested?)
-			f.write("# SkinWeights {\n")
-			f.write("# \"BoneName\"; # name of the bone \n");
-			f.write("# 99; #verts in this skin \n")
-			f.write("# 99; #list of indices affected by this bone \n");
-			f.write("# 1.000000; #list of weights \n")
-			f.write("# 1.000000; #bone matrix \n")
-			f.write("# }\n")
+			for vertexGroup in object.vertex_groups:
+				# TODO: For each bone (are these nested?)
+				f.write("# SkinWeights {\n")
+				f.write("# \"" + vertexGroup.name  + "\"; # name of the bone \n");
+				#f.write("# \"BoneName\"; # name of the bone \n");
+				f.write("# 99; #verts in this skin \n")
+				f.write("# 99; #list of indices affected by this bone \n");
+				f.write("# 1.000000; #list of weights \n")
+				f.write("# bone matrix \n")
+				f.write("# 1.000000, 0.000000, 0.000000, 0.000000,\n")
+				f.write("# 0.000000, 1.000000, 0.000000, 0.000000,\n")
+				f.write("# 0.000000, 0.000000, 1.000000, 0.000000,\n")
+				f.write("# 0.000000, 0.000000, 0.000000, 1.000000;;\n")
+				f.write("# }\n")
 		
 		# TODO: Locate the exact place to put the skeleton info (bone heirachy)
 		f.write("# Frame BoneName #This is the name of this bone. The section parents the bones together {\n")
@@ -349,7 +355,7 @@ def ExportFile(filepath):
 		f.write("# 1.000000, 0.000000, 0.000000, 0.000000,\n")
 		f.write("# 0.000000, 1.000000, 0.000000, 0.000000,\n")
 		f.write("# 0.000000, 0.000000, 1.000000, 0.000000,\n")
-		f.write("# 0.000000, 0.000000, 0.000000, 1.000000,\n")
+		f.write("# 0.000000, 0.000000, 0.000000, 1.000000;;\n")
 		f.write("# }\n")
 		f.write("# }\n")
 		
