@@ -89,7 +89,7 @@ def ExportFile(filepath):
 		# The DirectX format stores  matrices 
 		# in row major format so we transpose the
 		# matrix here before writing
-		finalMatrix.transpose()		
+		finalMatrix.transpose()
 		# Write the Matrix
 		for j in range(0, 4):
 			for i in range(0, 4):
@@ -322,57 +322,101 @@ def ExportFile(filepath):
 			f.write("}\n")
 		f.write("}" + "\n")
 		
+		# Grab any armatures modifiers on this mesh
 		armature = object.modifiers["Armature"].object
+		# if there is an armature modifier then write 
+		# skeletal data to the file
 		if armature is not None:
+			# Grab the Armature object from the armature modifier
 			armature = object.modifiers["Armature"].object.data
 			boneCount = len(armature.bones.items())
-			# TODO: Only write this is we have bones in our scene
-
-			f.write("#XSkinMeshHeader { \n")
-			f.write("#" + str(boneCount) + ";" + " #nMaxSkinWeightsPerVertex \n")
-			f.write("#" + str(boneCount) + ";" + " #nMaxSkinWeightsPerFace \n")
-			f.write("#" + str(boneCount) + ";" + " #nBones \n")
-			f.write("#}\n")
+			# Write the XSkinMeshHeader to file
+			f.write("XSkinMeshHeader { \n")
+			f.write("" + str(boneCount) + ";" + " #nMaxSkinWeightsPerVertex \n")
+			f.write("" + str(boneCount) + ";" + " #nMaxSkinWeightsPerFace \n")
+			f.write("" + str(boneCount) + ";" + " #nBones \n")
+			f.write("}\n")
 			
+			# TODO: I have some questions about this section.
+			# Does a mesh still animate correctly if I change the
+			# name of a vertex group? Does a vertex group have to share
+			# the same name as a bone in the armature?
+			# TODO: So far not at all happy about how indices
+			# are extracted from vertex groups. Seems stupidly difficult
+			# Go through all the vertex groups
 			for vertexGroup in object.vertex_groups:
 				# TODO: For each bone (are these nested?)
-				f.write("# SkinWeights {\n")
-				f.write("# \"" + vertexGroup.name  + "\"; # name of the bone \n");
-				#f.write("# \"BoneName\"; # name of the bone \n");
-				f.write("# 99; #verts in this skin \n")
+				f.write("SkinWeights {\n")
+				f.write("\"" + vertexGroup.name  + "\"; # name of the bone \n");
+				#a = vertexGroup.values() # NOTE: Doesn't work doesn't support IDProperties
+				#a = vertexGroup.values
+				#f.write("# ZZZ " + str(len(vertexGroup.items)) + "\n") # NOTE: Doesn't work doesn't support IDProperties
+				#f.write("# ZZZ " + str(len(vertexGroup.data)) + "\n") # NOTE: No memeber
+				# NOTE: Doesn't work doesn't support IDProperties
+				#for x in vertexGroup.items():
+				#	f.write("X \n")
+				# NOTE: Sort of works
+				#for i in range(0, vertexCount, 1):
+					#f.write(str('# %.6f' % vertexGroup.weight(i)) + "\n")
+				f.write("0; #verts in this skin \n")
 				f.write("# 99; #list of indices affected by this bone \n");
 				f.write("# 1.000000; #list of weights \n")
 				f.write("# bone matrix \n")
-				f.write("# 1.000000, 0.000000, 0.000000, 0.000000,\n")
-				f.write("# 0.000000, 1.000000, 0.000000, 0.000000,\n")
-				f.write("# 0.000000, 0.000000, 1.000000, 0.000000,\n")
-				f.write("# 0.000000, 0.000000, 0.000000, 1.000000;;\n")
-				f.write("# }\n")
-		
-		# TODO: Locate the exact place to put the skeleton info (bone heirachy)
-		f.write("# Frame BoneName #This is the name of this bone. The section parents the bones together {\n")
-		f.write("# FrameTransformMatrix { \n")
-		f.write("# 1.000000, 0.000000, 0.000000, 0.000000,\n")
-		f.write("# 0.000000, 1.000000, 0.000000, 0.000000,\n")
-		f.write("# 0.000000, 0.000000, 1.000000, 0.000000,\n")
-		f.write("# 0.000000, 0.000000, 0.000000, 1.000000;;\n")
-		f.write("# }\n")
-		f.write("# }\n")
-		
+				# TODO: I believe this matrix needs to be the 
+				# mesh matrix * posebonematrix.inverse
+				f.write("1.000000, 0.000000, 0.000000, 0.000000,\n")
+				f.write("0.000000, 1.000000, 0.000000, 0.000000,\n")
+				f.write("0.000000, 0.000000, 1.000000, 0.000000,\n")
+				f.write("0.000000, 0.000000, 0.000000, 1.000000;;\n")
+				f.write("}\n")
+				
+			# Go through all bones looking for root bones
+			for rootBone in armature.bones:
+				# if bone is a root bone
+				if rootBone.parent is None:
+					WriteBoneAndChildren(f, rootBone)
+				
 		f.write("}\n")
 		f.write("}\n")
 		f.write("\n")
 		
-		if object.modifiers["Armature"] is not None:
-			f.write("# AnimationSet {\n")
-			f.write("# Animation {\n")
-			f.write("# }\n")
-			f.write("# AnimationKey {\n")
-			f.write("# keytype; \n")
-			f.write("# numberofkeys; \n")
-			f.write("# }\n")
+		if object.modifiers["Armature"].object is not None:
+			# Grab the Scene
+			scene = bpy.context.scene
+			# Write some interesting information into the file
+			f.write("# Total Frames: " + str(scene.frame_end - scene.frame_start) + "\n")
+			f.write("# FPS: " + str(bpy.context.scene.render.fps) + "\n")
+			f.write("# FPS Base: " + str(bpy.context.scene.render.fps_base) + "\n")
+			f.write("AnimationSet {\n")
+			# Cache the current frame so we can store it later
+			cacheCurrentFrame = scene.frame_current
+			# Go through the scene one frame at a time scrubbing through the timeline
+			for frame in range(scene.frame_start, scene.frame_end + 1):
+				# TODO: Set keyframes here for all the joints
+				# we should probably assemble keys into a list or
+				# datastructure that can be written afterwards
+				# that way we only have to scrub through the scene once
+				# Datastructure should store keys on a per bone basis
+				# Data needs to record the frame time and a 4x4 matrix
+				# perhaps an associate array mapping to a list
+				scene.frame_set(frame)
+
+			# Restore the current frame 
+			scene.frame_set(cacheCurrentFrame)
+			# NOTE: There should be a foreach here as
+			# This data is rendered for each bone we are
+			# animating
+			f.write("Animation {\n")
+			f.write("AnimationKey {\n")
+			# TODO: Need to reconstruct the matrix for each frame here
+			# so that Y is up and that the rotations are correct. Since this happens
+			# a fair bit we need a function for it
+			f.write("4; # keytype (4 is matrix type) \n")
+			f.write("0; # numberofkeys\n")
+			f.write("}\n")
 			f.write("# {" + "BoneName" + " }\n")
-			f.write("# }\n")
+			f.write("}\n")
+			f.write("}\n")
 		
 		f.write("\n")
 	# Close the file
@@ -664,3 +708,74 @@ def WriteAnimation(f, animation):
 
 def WriteAnimationSet(f, animationSet):
 	print("not implemented yet")
+
+def WriteBoneAndChildren(f, rootBone):
+	# write its frame node
+	f.write("Frame " + rootBone.name + " {\n")
+	# write its transform
+	f.write("FrameTransformMatrix {\n")
+	# TODO: We need to swap the y and z axis, then transpose before writing
+	# I am not sure how to do this having recreated the
+	# matrix I wanted mathematically for the mesh's frame
+	# this requirement will reoccur when saving keyframe data needs to be solved
+	# TODO: Also this approach is incorrect. It will give the location of the bone object
+	# but the position relevant to animation is head and tail.
+	
+	# NOTE: I am trying to reconstruct the matrix here with limited success
+	boneLocation, boneRotation, boneScale = rootBone.matrix_local.decompose()
+	# Swap y and z
+	boneLocation.y, boneLocation.z = boneLocation.z, boneLocation.y
+	f.write("# " + str('%.6f' % boneLocation.x) + ";" + str('%.6f' % boneLocation.y) + ";" + str('%.6f' % boneLocation.z) + ";\n")
+	f.write("# " + str('%.6f' % boneRotation.x) + ";" + str('%.6f' % boneRotation.y) + ";" + str('%.6f' % boneRotation.z) + ";\n")
+	f.write("# " + str('%.6f' % boneScale.x) + ";" + str('%.6f' % boneScale.y) + ";" + str('%.6f' % boneScale.z) + ";\n")
+	
+	# Translation Matrix
+	translationMatrix = mathutils.Matrix.Translation((boneLocation.x, boneLocation.z, boneLocation.y))
+	# Rotation about the X Axis Matrix
+	#rotationXMatrix = mathutils.Matrix.Rotation((object.rotation_euler[0]), 4, 'X')
+	rotationXMatrix = mathutils.Matrix.Identity(4)
+	rotationXMatrix[1][1] = math.cos(-boneRotation.x)
+	rotationXMatrix[1][2] = -math.sin(-boneRotation.x)
+	rotationXMatrix[2][1] = math.sin(-boneRotation.x)
+	rotationXMatrix[2][2] = math.cos(-boneRotation.x)
+	# Rotation about the Y Axis Matrix
+	#rotationYMatrix = mathutils.Matrix.Rotation((object.rotation_euler[2]), 4, 'Y')
+	rotationYMatrix = mathutils.Matrix.Identity(4)
+	rotationYMatrix[0][0] = math.cos(-boneRotation.z)
+	rotationYMatrix[0][2] = math.sin(-boneRotation.z)
+	rotationYMatrix[2][0] = -math.sin(-boneRotation.z)
+	rotationYMatrix[2][2] = math.cos(-boneRotation.z)
+	# Rotation about the Z Axis Matrix
+	#rotationZMatrix = mathutils.Matrix.Rotation((object.rotation_euler[1]), 4, 'Z')
+	rotationZMatrix = mathutils.Matrix.Identity(4)
+	rotationZMatrix[0][0] = math.cos(-boneRotation.y)
+	rotationZMatrix[0][1] = -math.sin(-boneRotation.y)
+	rotationZMatrix[1][0] = math.sin(-boneRotation.y)
+	rotationZMatrix[1][1] = math.cos(-boneRotation.y)
+	# Scale Matrix
+	scaleXMatrix = mathutils.Matrix.Scale(boneScale.x, 4, (1.0, 0.0, 0.0))
+	scaleYMatrix = mathutils.Matrix.Scale(boneScale.z, 4, (0.0, 1.0, 0.0))
+	scaleZMatrix = mathutils.Matrix.Scale(boneScale.y, 4, (0.0, 0.0, 1.0))
+	
+	# Compute the final Model transformation matrix
+	finalMatrix = mathutils.Matrix.Identity(4)
+	finalMatrix = mathutils.Matrix(translationMatrix @ rotationYMatrix @ rotationZMatrix @ rotationXMatrix @scaleYMatrix @ scaleZMatrix @ scaleXMatrix)
+	finalMatrix.transpose()
+
+	#a = matrix.translation_get() # Doesn't work at all
+	#matrix = rootBone.head # head isn't a matrix not sure what it is without documentation
+	#a = rootBone.location # Bone has no member named location :(
+	for j in range(0, 4):
+		for i in range(0, 4):
+			f.write(str('%.6f' % finalMatrix[j][i]))
+			if i == 3 and j == 3:
+				f.write("; ")
+			else:
+				f.write(", ")
+			if i == 3:
+				f.write("\n")
+	f.write("}\n")
+	# Write the child bones
+	for bone in rootBone.children:
+		WriteBoneAndChildren(f, bone)
+	f.write("}\n")
