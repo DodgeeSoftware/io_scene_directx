@@ -1,6 +1,6 @@
 # ##### BEGIN ZLIB LICENSE BLOCK #####
 
-# Copyright (c) <2019> <Dodgee Software>
+# Copyright (c) <2020> <Dodgee Software>
 
 # This software is provided 'as-is', without any express or implied
 # warranty. In no event will the authors be held liable for any damages
@@ -30,9 +30,8 @@ import mathutils
 import bpy
 from pathlib import Path
 
-
 # TODO: Support for vertex colours via mesh.vertex_colors
-# TODO: I need to figure out how to do parented meshes (nested transforms)
+# TODO: Do I need to figure out how to do parented meshes (nested transforms)
 
 def ExportFile(filepath):
 	# Send a message to the console
@@ -57,6 +56,7 @@ def ExportFile(filepath):
 		# Write the FrameTransformationMatrix
 		f.write("FrameTransformMatrix\n")
 		f.write("{\n")
+		# TODO: Try and replace this with a reusable function
 		# Translation Matrix
 		translationMatrix = mathutils.Matrix.Translation((object.location[0], object.location[2], object.location[1]))
 		# Rotation about the X Axis Matrix
@@ -355,23 +355,15 @@ def ExportFile(filepath):
 				f.write("\"" + vertexGroup.name  + "\"; # name of the bone \n");
 				
 				#a = vertexGroup.values() # NOTE: Doesn't work doesn't support IDProperties
-				#a = vertexGroup.values
-				
-				#f.write("# ZZZ " + str(len(vertexGroup.items)) + "\n") # NOTE: Doesn't work doesn't support IDProperties
-				
-				#f.write("# ZZZ " + str(len(vertexGroup.data)) + "\n") # NOTE: No memeber
-				
+				#a = vertexGroup.keys() # NOTE: Doesn't work doesn't support IDProperties				
+				#f.write("# ZZZ " + str(len(vertexGroup.items)) + "\n") # NOTE: Doesn't work doesn't support IDProperties				
+				#f.write("# ZZZ " + str(len(vertexGroup.data)) + "\n") # NOTE: No memeber				
 				# NOTE: Doesn't work doesn't support IDProperties
-				#for x in vertexGroup.items():
-				#	f.write("X \n")
-				
+				#	for x in vertexGroup.items():
+				#		f.write("X \n")
 				# NOTE: Sort of works
 				#for i in range(0, vertexCount, 1):
 					#f.write(str('# %.6f' % vertexGroup.weight(i)) + "\n")
-					
-				f.write("0; #verts in this skin \n")
-				f.write("# 99; #list of indices affected by this bone \n");
-				
 				# NOTE: Doesn't work doesn't support IDProperties
 				#f.write(len(vertexGroup.items()))
 				
@@ -385,8 +377,52 @@ def ExportFile(filepath):
 				#	for key in vertexGroup.items():
 					#f.write("*")
 				#f.write("\n")
-					
-				f.write("# 1.000000; #list of weights \n")
+				
+				# Count the verts in this skin
+				vertSkinCount = 0
+				# Go through each polygon in the Mesh
+				for polygon in mesh_polygons:
+					# Go through all the vertices in the polygon
+					for i in range(len(polygon.vertices)):
+						try:
+							polygon.vertices[i]
+							vertSkinCount += 1
+						except RuntimeError:
+							# vertex is not in the group
+							pass
+				# Write the number of vertices in the skin
+				f.write(str(vertSkinCount) + "; #verts in this skin \n")
+				
+				# Create a dictionary for the weights
+				skinIndices = list()
+				skinWeights = list()
+				# Go through each polygon in the Mesh
+				for polygon in mesh_polygons:
+					# Go through all the vertices in the polygon
+					for i in range(len(polygon.vertices)):
+						try:
+							skinIndices.append(polygon.vertices[i])
+							skinWeights.append(vertexGroup.weight(polygon.vertices[i]))
+						except RuntimeError:
+							# vertex is not in the group
+							pass
+				
+				f.write("# list of indices \n")
+				for i in range(len(skinIndices)):
+					f.write(str(skinIndices[i]))
+					if i < len(skinIndices) - 1:
+						f.write(",\n")
+					else:
+						f.write(";\n")
+						
+				f.write("# list of weights \n")
+				for i in range(len(skinWeights)):
+					f.write(str('%.6f' % skinWeights[i]))
+					if i < len(skinWeights) - 1:
+						f.write(",\n")
+					else:
+						f.write(";\n")
+				
 				f.write("# bone matrix \n")
 				# TODO: I believe this matrix needs to be the 
 				# mesh matrix * posebonematrix.inverse
@@ -441,13 +477,16 @@ def ExportFile(filepath):
 					scene.frame_set(frame)
 					# Grab the local Bone matrix
 					boneMatrix = bone.matrix_local # altertive could be bone.matrix
+					boneMatrix.transpose()
 					# Write the FrameNumber, NumberOfelementsIn4x4Matrix(16) and then the elements in the matrix
 					f.write(str(frame) + ";" + "16" + ";")
 					# TODO: Store matrix for the bone here
 					# we are gonna have to convert the matrix
 					# to Y up from Z up and transpose 
-					# before writing it here
-					boneMatrix = mathutils.Matrix.Identity(4)
+					# before writing it here. TODO: For some 
+					# reason the matrix here isn't changing
+					# over the animation sequence. Stays constant 
+					# not sure why
 					# Write the bone Matrix
 					for j in range(0, 4):
 						for i in range(0, 4):
@@ -765,21 +804,9 @@ def WriteBoneAndChildren(f, rootBone):
 	# write its transform
 	f.write("FrameTransformMatrix\n")
 	f.write("{\n")
-	# TODO: We need to swap the y and z axis, then transpose before writing
-	# I am not sure how to do this having recreated the
-	# matrix I wanted mathematically for the mesh's frame
-	# this requirement will reoccur when saving keyframe data needs to be solved
-	# TODO: Also this approach is incorrect. It will give the location of the bone object
-	# but the position relevant to animation is head and tail.
-	
-	# NOTE: I am trying to reconstruct the matrix here with limited success
+	# TODO: Should this be local matrix? Or the world matrix?
+	# Decompose the local Matrix into component parts so we can reconstruct it
 	boneLocation, boneRotation, boneScale = rootBone.matrix_local.decompose()
-	# Swap y and z
-	boneLocation.y, boneLocation.z = boneLocation.z, boneLocation.y
-	f.write("# " + str('%.6f' % boneLocation.x) + ";" + str('%.6f' % boneLocation.y) + ";" + str('%.6f' % boneLocation.z) + ";\n")
-	f.write("# " + str('%.6f' % boneRotation.x) + ";" + str('%.6f' % boneRotation.y) + ";" + str('%.6f' % boneRotation.z) + ";\n")
-	f.write("# " + str('%.6f' % boneScale.x) + ";" + str('%.6f' % boneScale.y) + ";" + str('%.6f' % boneScale.z) + ";\n")
-	
 	# Translation Matrix
 	translationMatrix = mathutils.Matrix.Translation((boneLocation.x, boneLocation.z, boneLocation.y))
 	# Rotation about the X Axis Matrix
@@ -830,3 +857,41 @@ def WriteBoneAndChildren(f, rootBone):
 	for bone in rootBone.children:
 		WriteBoneAndChildren(f, bone)
 	f.write("}\n")
+
+# TODO: Review this function, does this also convert righthand to left hand?
+def ConvertMatrixToYAxisUp(matrix):
+	# Decompose the Matrix into component parts
+	location, rotation, scale = matrix.decompose()
+	
+	# Translation Matrix
+	translationMatrix = mathutils.Matrix.Translation((location.x, location.z, location.y))
+	# Rotation about the X Axis Matrix
+	#rotationXMatrix = mathutils.Matrix.Rotation((object.rotation_euler[0]), 4, 'X')
+	rotationXMatrix = mathutils.Matrix.Identity(4)
+	rotationXMatrix[1][1] = math.cos(-rotation.x)
+	rotationXMatrix[1][2] = -math.sin(-rotation.x)
+	rotationXMatrix[2][1] = math.sin(-rotation.x)
+	rotationXMatrix[2][2] = math.cos(-rotation.x)
+	# Rotation about the Y Axis Matrix
+	#rotationYMatrix = mathutils.Matrix.Rotation((object.rotation_euler[2]), 4, 'Y')
+	rotationYMatrix = mathutils.Matrix.Identity(4)
+	rotationYMatrix[0][0] = math.cos(-rotation.z)
+	rotationYMatrix[0][2] = math.sin(-rotation.z)
+	rotationYMatrix[2][0] = -math.sin(-rotation.z)
+	rotationYMatrix[2][2] = math.cos(-rotation.z)
+	# Rotation about the Z Axis Matrix
+	#rotationZMatrix = mathutils.Matrix.Rotation((object.rotation_euler[1]), 4, 'Z')
+	rotationZMatrix = mathutils.Matrix.Identity(4)
+	rotationZMatrix[0][0] = math.cos(-rotation.y)
+	rotationZMatrix[0][1] = -math.sin(-rotation.y)
+	rotationZMatrix[1][0] = math.sin(-rotation.y)
+	rotationZMatrix[1][1] = math.cos(-rotation.y)
+	# Scale Matrix
+	scaleXMatrix = mathutils.Matrix.Scale(scale.x, 4, (1.0, 0.0, 0.0))
+	scaleYMatrix = mathutils.Matrix.Scale(scale.z, 4, (0.0, 1.0, 0.0))
+	scaleZMatrix = mathutils.Matrix.Scale(scale.y, 4, (0.0, 0.0, 1.0))
+	
+	# Compute the final Model transformation matrix
+	finalMatrix = mathutils.Matrix.Identity(4)
+	finalMatrix = mathutils.Matrix(translationMatrix @ rotationYMatrix @ rotationZMatrix @ rotationXMatrix @scaleYMatrix @ scaleZMatrix @ scaleXMatrix)
+	return finalMatrix
