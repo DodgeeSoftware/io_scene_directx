@@ -348,22 +348,44 @@ def ExportFile(filepath):
 			# are extracted from vertex groups. Seems stupidly difficult
 			# Go through all the vertex groups
 			for vertexGroup in object.vertex_groups:
-				# TODO: For each bone (are these nested?)
 				f.write("SkinWeights\n")
 				f.write("{\n")
+				# WARNING: VertexGroup name isn't the same as Bone Name its the name in the heirachy which can be changed
+				# the name of the vertex group should never be different from the joint name
 				f.write("\"" + vertexGroup.name  + "\"; # name of the bone \n");
+				
 				#a = vertexGroup.values() # NOTE: Doesn't work doesn't support IDProperties
 				#a = vertexGroup.values
+				
 				#f.write("# ZZZ " + str(len(vertexGroup.items)) + "\n") # NOTE: Doesn't work doesn't support IDProperties
+				
 				#f.write("# ZZZ " + str(len(vertexGroup.data)) + "\n") # NOTE: No memeber
+				
 				# NOTE: Doesn't work doesn't support IDProperties
 				#for x in vertexGroup.items():
 				#	f.write("X \n")
+				
 				# NOTE: Sort of works
 				#for i in range(0, vertexCount, 1):
 					#f.write(str('# %.6f' % vertexGroup.weight(i)) + "\n")
+					
 				f.write("0; #verts in this skin \n")
 				f.write("# 99; #list of indices affected by this bone \n");
+				
+				# NOTE: Doesn't work doesn't support IDProperties
+				#f.write(len(vertexGroup.items()))
+				
+				# NOTE: Doesn't work doesn't support IDProperties
+				#f.write(type(vertexGroup.items()))
+				#for blender_index, blender_weight in vertexGroup.items():
+					#f.write("*")
+				#f.write("\n")
+				
+				# NOTE: Doesn't work doesn't support IDProperties
+				#	for key in vertexGroup.items():
+					#f.write("*")
+				#f.write("\n")
+					
 				f.write("# 1.000000; #list of weights \n")
 				f.write("# bone matrix \n")
 				# TODO: I believe this matrix needs to be the 
@@ -395,36 +417,56 @@ def ExportFile(filepath):
 			f.write("{\n")
 			# Cache the current frame so we can store it later
 			cacheCurrentFrame = scene.frame_current
-			# Go through the scene one frame at a time scrubbing through the timeline
-			for frame in range(scene.frame_start, scene.frame_end + 1):
-				# TODO: Set keyframes here for all the joints
-				# we should probably assemble keys into a list or
-				# datastructure that can be written afterwards
-				# that way we only have to scrub through the scene once
-				# Datastructure should store keys on a per bone basis
-				# Data needs to record the frame time and a 4x4 matrix
-				# perhaps an associate array mapping to a list
-				scene.frame_set(frame)
-
+			# Grab the Armature
+			armature = object.modifiers["Armature"].object.data
+			# Grab the Bones from the Armature
+			bones = armature.bones
+			
+			# Calculate frame count
+			frameCount = (scene.frame_end - scene.frame_start)
+			# Go through the bones one by one
+			for bone in bones:
+				f.write("Animation\n")
+				f.write("{\n")
+				f.write("AnimationKey\n")
+				f.write("{\n")
+				# TODO: Need to reconstruct the matrix for each frame here
+				# so that Y is up and that the rotations are correct. Since this happens
+				# a fair bit we need a function for it
+				f.write("4; # keytype (4 is matrix type) \n")
+				f.write(str(frameCount) +";" + "# numberofkeys\n")
+				# Go through the scene one frame at a time scrubbing through the timeline
+				for frame in range(scene.frame_start, scene.frame_end, 1):
+					# Set the frame for the animation
+					scene.frame_set(frame)
+					# Grab the local Bone matrix
+					boneMatrix = bone.matrix_local # altertive could be bone.matrix
+					# Write the FrameNumber, NumberOfelementsIn4x4Matrix(16) and then the elements in the matrix
+					f.write(str(frame) + ";" + "16" + ";")
+					# TODO: Store matrix for the bone here
+					# we are gonna have to convert the matrix
+					# to Y up from Z up and transpose 
+					# before writing it here
+					boneMatrix = mathutils.Matrix.Identity(4)
+					# Write the bone Matrix
+					for j in range(0, 4):
+						for i in range(0, 4):
+							f.write(str('%.6f' % boneMatrix[j][i]))
+							if j == 3 and i == 3:
+								f.write(";;")
+							else:
+								f.write(",")
+					if frame < scene.frame_end - 1:
+						f.write(",")
+					else:
+						f.write(";")
+					f.write("\n")
+				f.write("}\n")
+				f.write("{\"" + bone.name + "\"}\n")
+				f.write("}\n")
 			# Restore the current frame 
 			scene.frame_set(cacheCurrentFrame)
-			# NOTE: There should be a foreach here as
-			# This data is rendered for each bone we are
-			# animating
-			f.write("Animation\n")
-			f.write("{\n")
-			f.write("AnimationKey\n")
-			f.write("{\n")
-			# TODO: Need to reconstruct the matrix for each frame here
-			# so that Y is up and that the rotations are correct. Since this happens
-			# a fair bit we need a function for it
-			f.write("4; # keytype (4 is matrix type) \n")
-			f.write("0; # numberofkeys\n")
 			f.write("}\n")
-			f.write("# {" + "BoneName" + " }\n")
-			f.write("}\n")
-			f.write("}\n")
-		
 		f.write("\n")
 	# Close the file
 	f.close()
