@@ -52,9 +52,11 @@ def ExportFile(filepath):
 		mesh = object.data
 		# Write the Object Name
 		f.write("# " + object.name + "\n")
-		f.write("Frame\n{\n")
+		f.write("Frame\n")
+		f.write("{\n")
 		# Write the FrameTransformationMatrix
-		f.write("FrameTransformMatrix\n{\n")
+		f.write("FrameTransformMatrix\n")
+		f.write("{\n")
 		# Translation Matrix
 		translationMatrix = mathutils.Matrix.Translation((object.location[0], object.location[2], object.location[1]))
 		# Rotation about the X Axis Matrix
@@ -158,7 +160,7 @@ def ExportFile(filepath):
 		# are hard edges and this is wrong
 		# NOTE: We do NOT need to transform the normals.
 		# It seems that the frametransform is applied automatically
-		# to the normals		
+		# to the normals
 		f.write("MeshNormals \n{\n")
 		# Calculate the Number of normals
 		numNormals = 0
@@ -331,10 +333,11 @@ def ExportFile(filepath):
 			armature = object.modifiers["Armature"].object.data
 			boneCount = len(armature.bones.items())
 			# Write the XSkinMeshHeader to file
-			f.write("XSkinMeshHeader { \n")
-			f.write("" + str(boneCount) + ";" + " #nMaxSkinWeightsPerVertex \n")
-			f.write("" + str(boneCount) + ";" + " #nMaxSkinWeightsPerFace \n")
-			f.write("" + str(boneCount) + ";" + " #nBones \n")
+			f.write("XSkinMeshHeader\n")
+			f.write("{\n")
+			f.write(str(boneCount) + ";" + " #nMaxSkinWeightsPerVertex \n")
+			f.write(str(boneCount) + ";" + " #nMaxSkinWeightsPerFace \n")
+			f.write(str(boneCount) + ";" + " #nBones \n")
 			f.write("}\n")
 			
 			# TODO: I have some questions about this section.
@@ -346,7 +349,8 @@ def ExportFile(filepath):
 			# Go through all the vertex groups
 			for vertexGroup in object.vertex_groups:
 				# TODO: For each bone (are these nested?)
-				f.write("SkinWeights {\n")
+				f.write("SkinWeights\n")
+				f.write("{\n")
 				f.write("\"" + vertexGroup.name  + "\"; # name of the bone \n");
 				#a = vertexGroup.values() # NOTE: Doesn't work doesn't support IDProperties
 				#a = vertexGroup.values
@@ -387,7 +391,8 @@ def ExportFile(filepath):
 			f.write("# Total Frames: " + str(scene.frame_end - scene.frame_start) + "\n")
 			f.write("# FPS: " + str(bpy.context.scene.render.fps) + "\n")
 			f.write("# FPS Base: " + str(bpy.context.scene.render.fps_base) + "\n")
-			f.write("AnimationSet {\n")
+			f.write("AnimationSet\n")
+			f.write("{\n")
 			# Cache the current frame so we can store it later
 			cacheCurrentFrame = scene.frame_current
 			# Go through the scene one frame at a time scrubbing through the timeline
@@ -406,8 +411,10 @@ def ExportFile(filepath):
 			# NOTE: There should be a foreach here as
 			# This data is rendered for each bone we are
 			# animating
-			f.write("Animation {\n")
-			f.write("AnimationKey {\n")
+			f.write("Animation\n")
+			f.write("{\n")
+			f.write("AnimationKey\n")
+			f.write("{\n")
 			# TODO: Need to reconstruct the matrix for each frame here
 			# so that Y is up and that the rotations are correct. Since this happens
 			# a fair bit we need a function for it
@@ -711,9 +718,11 @@ def WriteAnimationSet(f, animationSet):
 
 def WriteBoneAndChildren(f, rootBone):
 	# write its frame node
-	f.write("Frame " + rootBone.name + " {\n")
+	f.write("Frame " + rootBone.name + "\n")
+	f.write("{\n")
 	# write its transform
-	f.write("FrameTransformMatrix {\n")
+	f.write("FrameTransformMatrix\n")
+	f.write("{\n")
 	# TODO: We need to swap the y and z axis, then transpose before writing
 	# I am not sure how to do this having recreated the
 	# matrix I wanted mathematically for the mesh's frame
