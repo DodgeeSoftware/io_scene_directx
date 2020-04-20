@@ -340,43 +340,12 @@ def ExportFile(filepath):
 			f.write(str(boneCount) + ";" + " #nBones \n")
 			f.write("}\n")
 			
-			# TODO: I have some questions about this section.
-			# Does a mesh still animate correctly if I change the
-			# name of a vertex group? Does a vertex group have to share
-			# the same name as a bone in the armature?
-			# TODO: So far not at all happy about how indices
-			# are extracted from vertex groups. Seems stupidly difficult
-			# Go through all the vertex groups
 			for vertexGroup in object.vertex_groups:
 				f.write("SkinWeights\n")
 				f.write("{\n")
 				# WARNING: VertexGroup name isn't the same as Bone Name its the name in the heirachy which can be changed
 				# the name of the vertex group should never be different from the joint name
 				f.write("\"" + vertexGroup.name  + "\"; # name of the bone \n");
-				
-				#a = vertexGroup.values() # NOTE: Doesn't work doesn't support IDProperties
-				#a = vertexGroup.keys() # NOTE: Doesn't work doesn't support IDProperties				
-				#f.write("# ZZZ " + str(len(vertexGroup.items)) + "\n") # NOTE: Doesn't work doesn't support IDProperties				
-				#f.write("# ZZZ " + str(len(vertexGroup.data)) + "\n") # NOTE: No memeber				
-				# NOTE: Doesn't work doesn't support IDProperties
-				#	for x in vertexGroup.items():
-				#		f.write("X \n")
-				# NOTE: Sort of works
-				#for i in range(0, vertexCount, 1):
-					#f.write(str('# %.6f' % vertexGroup.weight(i)) + "\n")
-				# NOTE: Doesn't work doesn't support IDProperties
-				#f.write(len(vertexGroup.items()))
-				
-				# NOTE: Doesn't work doesn't support IDProperties
-				#f.write(type(vertexGroup.items()))
-				#for blender_index, blender_weight in vertexGroup.items():
-					#f.write("*")
-				#f.write("\n")
-				
-				# NOTE: Doesn't work doesn't support IDProperties
-				#	for key in vertexGroup.items():
-					#f.write("*")
-				#f.write("\n")
 				
 				# Count the verts in this skin
 				vertSkinCount = 0
@@ -424,11 +393,25 @@ def ExportFile(filepath):
 						f.write(";\n")
 				
 				f.write("# bone matrix \n")
-				# TODO: I believe this matrix needs to be the 
-				# mesh matrix * posebonematrix.inverse
+				## TODO: I believe this matrix needs to be the 
+				## TODO: This will need to be converted to y up axis and ensure left handed coordinate system
+				## mesh matrix * posebonematrix.inverse
+				#skinMatrix = mathutils.Matrix.Identity(4)
+				#skinMatrix = skinMatrix @ finalMatrix;
+				##skinMatrix = skinMatrix @ boneMatrix;
+				#skinMatrix.transpose();
+				## Write the Matrix
+				#for j in range(0, 4):
+					#for i in range(0, 4):
+						#f.write(str('%.6f' % skinMatrix[j][i]))
+						#if j == 3 and i == 3:
+							#f.write(";;")
+						#else:
+							#f.write(",")
+				#f.write("\n")
 				f.write("1.000000, 0.000000, 0.000000, 0.000000,\n")
-				f.write("0.000000, 1.000000, 0.000000, 0.000000,\n")
 				f.write("0.000000, 0.000000, 1.000000, 0.000000,\n")
+				f.write("0.000000, 1.000000, 0.000000, 0.000000,\n")
 				f.write("0.000000, 0.000000, 0.000000, 1.000000;;\n")
 				f.write("}\n")
 				
@@ -453,10 +436,18 @@ def ExportFile(filepath):
 			f.write("{\n")
 			# Cache the current frame so we can store it later
 			cacheCurrentFrame = scene.frame_current
-			# Grab the Armature
-			armature = object.modifiers["Armature"].object.data
+			# OLD CODE WAS (When confident remove it)
+			## Grab the Armature
+			#armature = object.modifiers["Armature"].object.data
+			## Grab the Bones from the Armature
+			#bones = armature.bones
+			
+			# Grab the name of the armature
+			armatureName = object.modifiers["Armature"].object.name
+			# Grab the armature
+			armature = bpy.data.objects[armatureName]
 			# Grab the Bones from the Armature
-			bones = armature.bones
+			bones = armature.pose.bones
 			
 			# Calculate frame count
 			frameCount = (scene.frame_end - scene.frame_start)
@@ -476,7 +467,9 @@ def ExportFile(filepath):
 					# Set the frame for the animation
 					scene.frame_set(frame)
 					# Grab the local Bone matrix
-					boneMatrix = bone.matrix_local # altertive could be bone.matrix
+					#boneMatrix = bone.matrix_local # altertive could be bone.matrix
+					boneMatrix = bone.matrix
+					# TODO: need to convert the matrix to Y up, and ensure its lefthanded coordinate system
 					boneMatrix.transpose()
 					# Write the FrameNumber, NumberOfelementsIn4x4Matrix(16) and then the elements in the matrix
 					f.write(str(frame) + ";" + "16" + ";")
@@ -501,7 +494,7 @@ def ExportFile(filepath):
 						f.write(";")
 					f.write("\n")
 				f.write("}\n")
-				f.write("{\"" + bone.name + "\"}\n")
+				f.write("{" + bone.name + "}\n")
 				f.write("}\n")
 			# Restore the current frame 
 			scene.frame_set(cacheCurrentFrame)
