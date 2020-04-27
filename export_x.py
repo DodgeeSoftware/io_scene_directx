@@ -324,11 +324,9 @@ def ExportFile(filepath):
 			f.write("}\n")
 		f.write("}" + "\n")
 		
-		# Grab any armatures modifiers on this mesh
-		armature = object.modifiers["Armature"].object
 		# if there is an armature modifier then write 
 		# skeletal data to the file
-		if armature is not None:
+		if object.modifiers.find("Armature") is not -1:
 			# Grab the Armature object from the armature modifier
 			armature = object.modifiers["Armature"].object.data
 			boneCount = len(armature.bones.items())
@@ -392,29 +390,32 @@ def ExportFile(filepath):
 					else:
 						f.write(";\n")
 				
-				f.write("# bone matrix \n")
-				## TODO: I believe this matrix needs to be the 
-				## TODO: This will need to be converted to y up axis and ensure left handed coordinate system
-				## mesh matrix * posebonematrix.inverse
-				#skinMatrix = mathutils.Matrix.Identity(4)
-				#skinMatrix = skinMatrix @ finalMatrix;
-				##skinMatrix = skinMatrix @ boneMatrix;
-				#skinMatrix.transpose();
-				## Write the Matrix
-				#for j in range(0, 4):
-					#for i in range(0, 4):
-						#f.write(str('%.6f' % skinMatrix[j][i]))
-						#if j == 3 and i == 3:
-							#f.write(";;")
-						#else:
-							#f.write(",")
+				f.write("# offset matrix \n")
+				# From official Documentation: 
+				# The matrix matrixOffset transforms the mesh vertices to the space of the bone.
+				# When concatenated to the bone's transform, this provides the world space coordinates of the mesh as affected by the bone
+				bone = armature.bones[vertexGroup.name]
+				#boneMatrix = bone.matrix
+				boneMatrix = bone.matrix_local
+				boneMatrix = (boneMatrix.inverted() @ object.matrix_local)
+				#boneMatrix = ConvertMatrixToYAxisUp(boneMatrix)
+				boneMatrix.transpose()
+				# Write the Matrix
+				for j in range(0, 4):
+					for i in range(0, 4):
+						f.write(str('%.6f' % boneMatrix[j][i]))
+						if j == 3 and i == 3:
+							f.write(";;")
+						else:
+							f.write(",")
+					f.write("\n")
 				#f.write("\n")
-				f.write("1.000000, 0.000000, 0.000000, 0.000000,\n")
-				f.write("0.000000, 0.000000, 1.000000, 0.000000,\n")
-				f.write("0.000000, 1.000000, 0.000000, 0.000000,\n")
-				f.write("0.000000, 0.000000, 0.000000, 1.000000;;\n")
+				#f.write("1.000000, 0.000000, 0.000000, 0.000000,\n")
+				#f.write("0.000000, 0.000000, 1.000000, 0.000000,\n")
+				#f.write("0.000000, 1.000000, 0.000000, 0.000000,\n")
+				#f.write("0.000000, 0.000000, 0.000000, 1.000000;;\n")
 				f.write("}\n")
-				
+			
 			# Go through all bones looking for root bones
 			for rootBone in armature.bones:
 				# if bone is a root bone
@@ -425,7 +426,7 @@ def ExportFile(filepath):
 		f.write("}\n")
 		f.write("\n")
 		
-		if object.modifiers["Armature"].object is not None:
+		if object.modifiers.find("Armature") is not -1:
 			# Grab the Scene
 			scene = bpy.context.scene
 			# Write some interesting information into the file
@@ -468,18 +469,15 @@ def ExportFile(filepath):
 					scene.frame_set(frame)
 					# Grab the local Bone matrix
 					#boneMatrix = bone.matrix_local # altertive could be bone.matrix
+					# Convert the matrix to Y up, and ensure its lefthanded coordinate system
+					#boneMatrix = ConvertMatrixToYAxisUp(bone.matrix)
 					boneMatrix = bone.matrix
-					# TODO: need to convert the matrix to Y up, and ensure its lefthanded coordinate system
-					boneMatrix.transpose()
+					boneMatrix = ConvertMatrixToYAxisUp(boneMatrix)
+					## Tranpose before writing
+					#boneMatrix.transpose()
 					# Write the FrameNumber, NumberOfelementsIn4x4Matrix(16) and then the elements in the matrix
 					f.write(str(frame) + ";" + "16" + ";")
-					# TODO: Store matrix for the bone here
-					# we are gonna have to convert the matrix
-					# to Y up from Z up and transpose 
-					# before writing it here. TODO: For some 
-					# reason the matrix here isn't changing
-					# over the animation sequence. Stays constant 
-					# not sure why
+					f.write("\n")
 					# Write the bone Matrix
 					for j in range(0, 4):
 						for i in range(0, 4):
@@ -488,6 +486,7 @@ def ExportFile(filepath):
 								f.write(";;")
 							else:
 								f.write(",")
+						f.write("\n")
 					if frame < scene.frame_end - 1:
 						f.write(",")
 					else:
