@@ -397,8 +397,10 @@ def ExportFile(filepath):
 				bone = armature.bones[vertexGroup.name]
 				#boneMatrix = bone.matrix
 				boneMatrix = bone.matrix_local
-				boneMatrix = (boneMatrix.inverted() @ object.matrix_local)
-				#boneMatrix = ConvertMatrixToYAxisUp(boneMatrix)
+				boneMatrix = boneMatrix.inverted()
+				boneMatrix = boneMatrix @ object.modifiers["Armature"].object.matrix_world.inverted()
+				boneMatrix = boneMatrix @ object.matrix_world
+				boneMatrix = ConvertMatrixToYAxisUp(boneMatrix)
 				boneMatrix.transpose()
 				# Write the Matrix
 				for j in range(0, 4):
@@ -472,9 +474,15 @@ def ExportFile(filepath):
 					# Convert the matrix to Y up, and ensure its lefthanded coordinate system
 					#boneMatrix = ConvertMatrixToYAxisUp(bone.matrix)
 					boneMatrix = bone.matrix
+					
+					boneLocation, boneRotation, boneScale = boneMatrix.decompose() # TODO: decompose is inaccurate need a better method
+					f.write("# position(" + str(boneLocation[0]) + ", " + str(boneLocation[1]) + ", " + str(boneLocation[2]) + ")\n")
+					f.write("# rotation(" + str(boneRotation[0]) + ", " + str(boneRotation[1]) + ", " + str(boneRotation[2]) + ")\n")
+					f.write("# scale(" + str(boneScale[0]) + "," + str(boneScale[1]) + str(boneScale[2]) + ")\n")
+					
 					boneMatrix = ConvertMatrixToYAxisUp(boneMatrix)
-					## Tranpose before writing
-					#boneMatrix.transpose()
+					# Tranpose before writing
+					boneMatrix.transpose()
 					# Write the FrameNumber, NumberOfelementsIn4x4Matrix(16) and then the elements in the matrix
 					f.write(str(frame) + ";" + "16" + ";")
 					f.write("\n")
@@ -796,9 +804,12 @@ def WriteBoneAndChildren(f, rootBone):
 	# write its transform
 	f.write("FrameTransformMatrix\n")
 	f.write("{\n")
-	# TODO: Should this be local matrix? Or the world matrix?
+
+	boneMatrix = mathutils.Matrix.Identity(4)
+	if rootBone.parent:
+		boneMatrix = rootBone.parent.matrix_local.inverted()
 	# Decompose the local Matrix into component parts so we can reconstruct it
-	boneLocation, boneRotation, boneScale = rootBone.matrix_local.decompose()
+	boneLocation, boneRotation, boneScale = rootBone.matrix_local.decompose() # TODO: decompose is inaccurate need a better method
 	# Translation Matrix
 	translationMatrix = mathutils.Matrix.Translation((boneLocation.x, boneLocation.z, boneLocation.y))
 	# Rotation about the X Axis Matrix
@@ -853,7 +864,7 @@ def WriteBoneAndChildren(f, rootBone):
 # TODO: Review this function, does this also convert righthand to left hand?
 def ConvertMatrixToYAxisUp(matrix):
 	# Decompose the Matrix into component parts
-	location, rotation, scale = matrix.decompose()
+	location, rotation, scale = matrix.decompose() # TODO: decompose is inaccurate need a better method
 	
 	# Translation Matrix
 	translationMatrix = mathutils.Matrix.Translation((location.x, location.z, location.y))
