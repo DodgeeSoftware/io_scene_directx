@@ -453,7 +453,7 @@ def ExportFile(filepath):
 			bones = armature.pose.bones
 			
 			# Calculate frame count
-			frameCount = (scene.frame_end - scene.frame_start)
+			frameCount = (scene.frame_end - scene.frame_start) + 1
 			# Go through the bones one by one
 			for bone in bones:
 				f.write("Animation\n")
@@ -466,7 +466,7 @@ def ExportFile(filepath):
 				f.write("4; # keytype (4 is matrix type) \n")
 				f.write(str(frameCount) +";" + "# numberofkeys\n")
 				# Go through the scene one frame at a time scrubbing through the timeline
-				for frame in range(scene.frame_start, scene.frame_end, 1):
+				for frame in range(scene.frame_start, scene.frame_end + 1, 1):
 					# Set the frame for the animation
 					scene.frame_set(frame)
 					# Grab the local Bone matrix
@@ -495,7 +495,7 @@ def ExportFile(filepath):
 							else:
 								f.write(",")
 						f.write("\n")
-					if frame < scene.frame_end - 1:
+					if frame < scene.frame_end:
 						f.write(",")
 					else:
 						f.write(";")
