@@ -352,7 +352,7 @@ def ExportFile(filepath):
 					# Go through all the vertices in the polygon
 					for i in range(len(polygon.vertices)):
 						try:
-							polygon.vertices[i]
+							vertexGroup.weight(polygon.vertices[i])
 							vertSkinCount += 1
 						except RuntimeError:
 							# vertex is not in the group
@@ -368,8 +368,8 @@ def ExportFile(filepath):
 					# Go through all the vertices in the polygon
 					for i in range(len(polygon.vertices)):
 						try:
-							skinIndices.append(polygon.vertices[i])
 							skinWeights.append(vertexGroup.weight(polygon.vertices[i]))
+							skinIndices.append(polygon.vertices[i])
 						except RuntimeError:
 							# vertex is not in the group
 							pass
