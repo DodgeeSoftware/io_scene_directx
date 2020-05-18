@@ -212,7 +212,7 @@ def ExportFile(filepath):
 			# is set by the user in the interface.
 			uvs = mesh.uv_layers.active.data[:]
 			# Write the Name of the UVMap
-			f.write("# " + str(mesh.uv_layers.active.name) + "\n")			
+			f.write("# " + str(mesh.uv_layers.active.name) + "\n")
 			f.write("MeshTextureCoords \n{\n")
 			# Write the UV coords for faces
 			f.write(str(len(mesh.uv_layers.active.data[:])) + ";\n")
@@ -395,22 +395,72 @@ def ExportFile(filepath):
 				# The matrix matrixOffset transforms the mesh vertices to the space of the bone.
 				# When concatenated to the bone's transform, this provides the world space coordinates of the mesh as affected by the bone
 				bone = armature.bones[vertexGroup.name]
-				#boneMatrix = bone.matrix
+				
+				# 8888888888888888888888888888
+				
 				boneMatrix = bone.matrix_local
 				boneMatrix = boneMatrix.inverted()
-				boneMatrix = boneMatrix @ object.modifiers["Armature"].object.matrix_world.inverted()
-				boneMatrix = boneMatrix @ object.matrix_world
-				boneMatrix = ConvertMatrixToYAxisUp(boneMatrix)
-				boneMatrix.transpose()
-				# Write the Matrix
+				boneMatrix = object.modifiers["Armature"].object.matrix_world.inverted() @ boneMatrix
+				boneMatrix = object.matrix_world @ boneMatrix
+
+				# Grab bone location rotation and scale
+				boneLocation = [ boneMatrix[0][3], boneMatrix[1][3], boneMatrix[2][3] ]
+				myQuaternion = boneMatrix.to_quaternion()
+				myEuler = myQuaternion.to_euler()
+				boneRotation = [ myEuler[0], myEuler[1], myEuler[2] ]
+				boneScale = [ boneMatrix[0][0], boneMatrix[1][2], boneMatrix[2][1] ]
+				# Create translation Matrix
+				tMatrix = mathutils.Matrix.Translation((boneLocation[0], boneLocation[2], boneLocation[1]))
+				# Rotation about the X Axis Matrix
+				rXMatrix = mathutils.Matrix.Identity(4)
+				rXMatrix[1][1] = math.cos(-boneRotation[0])
+				rXMatrix[1][2] = -math.sin(-boneRotation[0])
+				rXMatrix[2][1] = math.sin(-boneRotation[0])
+				rXMatrix[2][2] = math.cos(-boneRotation[0])
+				# Rotation about the Y Axis Matrix
+				rYMatrix = mathutils.Matrix.Identity(4)
+				rYMatrix[0][0] = math.cos(-boneRotation[2])
+				rYMatrix[0][2] = math.sin(-boneRotation[2])
+				rYMatrix[2][0] = -math.sin(-boneRotation[2])
+				rYMatrix[2][2] = math.cos(-boneRotation[2])
+				# Rotation about the Z Axis Matrix
+				rZMatrix = mathutils.Matrix.Identity(4)
+				rZMatrix[0][0] = math.cos(-boneRotation[1])
+				rZMatrix[0][1] = -math.sin(-boneRotation[1])
+				rZMatrix[1][0] = math.sin(-boneRotation[1])
+				rZMatrix[1][1] = math.cos(-boneRotation[1])
+				# Create the Scale Matrices
+				sXMatrix = mathutils.Matrix.Scale(boneScale[0], 4, (1.0, 0.0, 0.0))
+				sYMatrix = mathutils.Matrix.Scale(boneScale[2], 4, (0.0, 1.0, 0.0))
+				sZMatrix = mathutils.Matrix.Scale(boneScale[1], 4, (0.0, 0.0, 1.0))
+				# Compute the final Model transformation matrix
+				fMatrix = mathutils.Matrix(tMatrix @ rYMatrix @ rZMatrix @ rXMatrix @sYMatrix @ sZMatrix @ sXMatrix)
+				# Tranpose before writing
+				fMatrix.transpose()
+				# Write the matrix
 				for j in range(0, 4):
 					for i in range(0, 4):
-						f.write(str('%.6f' % boneMatrix[j][i]))
-						if j == 3 and i == 3:
-							f.write(";;")
+						f.write(str('%.6f' % fMatrix[j][i]))
+						if i == 3 and j == 3:
+							f.write("; ")
 						else:
-							f.write(",")
-					f.write("\n")
+							f.write(", ")
+						if i == 3:
+							f.write("\n")
+
+
+				
+				# 8888888888888888888888888888
+				
+				## Write the Matrix
+				#for j in range(0, 4):
+					#for i in range(0, 4):
+						#f.write(str('%.6f' % boneMatrix[j][i]))
+						#if j == 3 and i == 3:
+							#f.write(";;")
+						#else:
+							#f.write(",")
+					#f.write("\n")
 				#f.write("\n")
 				#f.write("1.000000, 0.000000, 0.000000, 0.000000,\n")
 				#f.write("0.000000, 0.000000, 1.000000, 0.000000,\n")
@@ -432,7 +482,7 @@ def ExportFile(filepath):
 			# Grab the Scene
 			scene = bpy.context.scene
 			# Write some interesting information into the file
-			f.write("# Total Frames: " + str(scene.frame_end - scene.frame_start) + "\n")
+			f.write("# Total Frames: " + str(scene.frame_end - scene.frame_start + 1) + "\n")
 			f.write("# FPS: " + str(bpy.context.scene.render.fps) + "\n")
 			f.write("# FPS Base: " + str(bpy.context.scene.render.fps_base) + "\n")
 			f.write("AnimationSet\n")
@@ -469,18 +519,35 @@ def ExportFile(filepath):
 				for frame in range(scene.frame_start, scene.frame_end + 1, 1):
 					# Set the frame for the animation
 					scene.frame_set(frame)
-					# Grab the local Bone matrix
-					#boneMatrix = bone.matrix_local # altertive could be bone.matrix
-					# Convert the matrix to Y up, and ensure its lefthanded coordinate system
-					#boneMatrix = ConvertMatrixToYAxisUp(bone.matrix)
-					boneMatrix = bone.matrix
-					
-					boneLocation, boneRotation, boneScale = boneMatrix.decompose() # TODO: decompose is inaccurate need a better method
-					f.write("# position(" + str(boneLocation[0]) + ", " + str(boneLocation[1]) + ", " + str(boneLocation[2]) + ")\n")
-					f.write("# rotation(" + str(boneRotation[0]) + ", " + str(boneRotation[1]) + ", " + str(boneRotation[2]) + ")\n")
-					f.write("# scale(" + str(boneScale[0]) + "," + str(boneScale[1]) + str(boneScale[2]) + ")\n")
-					
-					boneMatrix = ConvertMatrixToYAxisUp(boneMatrix)
+					# Grab bone location rotation and scale
+					boneLocation = bone.location
+					boneRotation = bone.rotation_euler
+					boneScale = bone.scale
+					tMatrix = mathutils.Matrix.Translation((boneLocation[0], boneLocation[2], boneLocation[1]))
+					# Rotation about the X Axis Matrix
+					rXMatrix = mathutils.Matrix.Identity(4)
+					rXMatrix[1][1] = math.cos(-boneRotation[0])
+					rXMatrix[1][2] = -math.sin(-boneRotation[0])
+					rXMatrix[2][1] = math.sin(-boneRotation[0])
+					rXMatrix[2][2] = math.cos(-boneRotation[0])
+					# Rotation about the Y Axis Matrix
+					rYMatrix = mathutils.Matrix.Identity(4)
+					rYMatrix[0][0] = math.cos(-boneRotation[2])
+					rYMatrix[0][2] = math.sin(-boneRotation[2])
+					rYMatrix[2][0] = -math.sin(-boneRotation[2])
+					rYMatrix[2][2] = math.cos(-boneRotation[2])
+					# Rotation about the Z Axis Matrix
+					rZMatrix = mathutils.Matrix.Identity(4)
+					rZMatrix[0][0] = math.cos(-boneRotation[1])
+					rZMatrix[0][1] = -math.sin(-boneRotation[1])
+					rZMatrix[1][0] = math.sin(-boneRotation[1])
+					rZMatrix[1][1] = math.cos(-boneRotation[1])
+					# Calculate Scale
+					sXMatrix = mathutils.Matrix.Scale(boneScale[0], 4, (1.0, 0.0, 0.0))
+					sYMatrix = mathutils.Matrix.Scale(boneScale[2], 4, (0.0, 1.0, 0.0))
+					sZMatrix = mathutils.Matrix.Scale(boneScale[1], 4, (0.0, 0.0, 1.0))
+					# Compute the final Model transformation matrix
+					boneMatrix = mathutils.Matrix(tMatrix @ rYMatrix @ rZMatrix @ rXMatrix @sYMatrix @ sZMatrix @ sXMatrix)
 					# Tranpose before writing
 					boneMatrix.transpose()
 					# Write the FrameNumber, NumberOfelementsIn4x4Matrix(16) and then the elements in the matrix
@@ -797,55 +864,50 @@ def WriteAnimation(f, animation):
 def WriteAnimationSet(f, animationSet):
 	print("not implemented yet")
 
-def WriteBoneAndChildren(f, rootBone):
+def WriteBoneAndChildren(f, bone):
 	# write its frame node
-	f.write("Frame " + rootBone.name + "\n")
+	f.write("Frame " + bone.name + "\n")
 	f.write("{\n")
 	# write its transform
 	f.write("FrameTransformMatrix\n")
 	f.write("{\n")
-
-	boneMatrix = mathutils.Matrix.Identity(4)
-	if rootBone.parent:
-		boneMatrix = rootBone.parent.matrix_local.inverted()
-	# Decompose the local Matrix into component parts so we can reconstruct it
-	boneLocation, boneRotation, boneScale = rootBone.matrix_local.decompose() # TODO: decompose is inaccurate need a better method
-	# Translation Matrix
-	translationMatrix = mathutils.Matrix.Translation((boneLocation.x, boneLocation.z, boneLocation.y))
+	# Grab the Bone Matrix relative to its parent
+	boneMatrix = bone.matrix_local
+	# Grab bone location rotation and scale
+	boneLocation = [ boneMatrix[0][3], boneMatrix[1][3], boneMatrix[2][3] ]
+	myQuaternion = boneMatrix.to_quaternion()
+	myEuler = myQuaternion.to_euler()
+	boneRotation = [ myEuler[0], myEuler[1], myEuler[2] ] # [ 0.0, 0.0, 0.0 ]
+	boneScale = [ boneMatrix[0][0], boneMatrix[1][2], boneMatrix[2][1] ]
+	# Create translation Matrix
+	tMatrix = mathutils.Matrix.Translation((boneLocation[0], boneLocation[2], boneLocation[1]))
 	# Rotation about the X Axis Matrix
-	#rotationXMatrix = mathutils.Matrix.Rotation((object.rotation_euler[0]), 4, 'X')
-	rotationXMatrix = mathutils.Matrix.Identity(4)
-	rotationXMatrix[1][1] = math.cos(-boneRotation.x)
-	rotationXMatrix[1][2] = -math.sin(-boneRotation.x)
-	rotationXMatrix[2][1] = math.sin(-boneRotation.x)
-	rotationXMatrix[2][2] = math.cos(-boneRotation.x)
+	rXMatrix = mathutils.Matrix.Identity(4)
+	rXMatrix[1][1] = math.cos(-boneRotation[0])
+	rXMatrix[1][2] = -math.sin(-boneRotation[0])
+	rXMatrix[2][1] = math.sin(-boneRotation[0])
+	rXMatrix[2][2] = math.cos(-boneRotation[0])
 	# Rotation about the Y Axis Matrix
-	#rotationYMatrix = mathutils.Matrix.Rotation((object.rotation_euler[2]), 4, 'Y')
-	rotationYMatrix = mathutils.Matrix.Identity(4)
-	rotationYMatrix[0][0] = math.cos(-boneRotation.z)
-	rotationYMatrix[0][2] = math.sin(-boneRotation.z)
-	rotationYMatrix[2][0] = -math.sin(-boneRotation.z)
-	rotationYMatrix[2][2] = math.cos(-boneRotation.z)
+	rYMatrix = mathutils.Matrix.Identity(4)
+	rYMatrix[0][0] = math.cos(-boneRotation[2])
+	rYMatrix[0][2] = math.sin(-boneRotation[2])
+	rYMatrix[2][0] = -math.sin(-boneRotation[2])
+	rYMatrix[2][2] = math.cos(-boneRotation[2])
 	# Rotation about the Z Axis Matrix
-	#rotationZMatrix = mathutils.Matrix.Rotation((object.rotation_euler[1]), 4, 'Z')
-	rotationZMatrix = mathutils.Matrix.Identity(4)
-	rotationZMatrix[0][0] = math.cos(-boneRotation.y)
-	rotationZMatrix[0][1] = -math.sin(-boneRotation.y)
-	rotationZMatrix[1][0] = math.sin(-boneRotation.y)
-	rotationZMatrix[1][1] = math.cos(-boneRotation.y)
-	# Scale Matrix
-	scaleXMatrix = mathutils.Matrix.Scale(boneScale.x, 4, (1.0, 0.0, 0.0))
-	scaleYMatrix = mathutils.Matrix.Scale(boneScale.z, 4, (0.0, 1.0, 0.0))
-	scaleZMatrix = mathutils.Matrix.Scale(boneScale.y, 4, (0.0, 0.0, 1.0))
-	
+	rZMatrix = mathutils.Matrix.Identity(4)
+	rZMatrix[0][0] = math.cos(-boneRotation[1])
+	rZMatrix[0][1] = -math.sin(-boneRotation[1])
+	rZMatrix[1][0] = math.sin(-boneRotation[1])
+	rZMatrix[1][1] = math.cos(-boneRotation[1])
+	# Create the Scale Matrices
+	sXMatrix = mathutils.Matrix.Scale(boneScale[0], 4, (1.0, 0.0, 0.0))
+	sYMatrix = mathutils.Matrix.Scale(boneScale[2], 4, (0.0, 1.0, 0.0))
+	sZMatrix = mathutils.Matrix.Scale(boneScale[1], 4, (0.0, 0.0, 1.0))
 	# Compute the final Model transformation matrix
-	finalMatrix = mathutils.Matrix.Identity(4)
-	finalMatrix = mathutils.Matrix(translationMatrix @ rotationYMatrix @ rotationZMatrix @ rotationXMatrix @scaleYMatrix @ scaleZMatrix @ scaleXMatrix)
+	finalMatrix = mathutils.Matrix(tMatrix @ rYMatrix @ rZMatrix @ rXMatrix @sYMatrix @ sZMatrix @ sXMatrix)
+	# Tranpose before writing
 	finalMatrix.transpose()
-
-	#a = matrix.translation_get() # Doesn't work at all
-	#matrix = rootBone.head # head isn't a matrix not sure what it is without documentation
-	#a = rootBone.location # Bone has no member named location :(
+	# Write the matrix
 	for j in range(0, 4):
 		for i in range(0, 4):
 			f.write(str('%.6f' % finalMatrix[j][i]))
@@ -857,8 +919,8 @@ def WriteBoneAndChildren(f, rootBone):
 				f.write("\n")
 	f.write("}\n")
 	# Write the child bones
-	for bone in rootBone.children:
-		WriteBoneAndChildren(f, bone)
+	for childBone in bone.children:
+		WriteBoneAndChildren(f, childBone)
 	f.write("}\n")
 
 # TODO: Review this function, does this also convert righthand to left hand?
