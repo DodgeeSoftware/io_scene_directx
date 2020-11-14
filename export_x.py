@@ -34,6 +34,8 @@ from pathlib import Path
 # TODO: Do I need to figure out how to do parented meshes (nested transforms)
 
 def ExportFile(filepath):
+	bpy.ops.object.mode_set(mode="OBJECT")
+	
 	# Send a message to the console
 	print("Exporting File: " + filepath)
 	# Open the file for export
