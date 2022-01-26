@@ -1,73 +1,53 @@
 OpenShadingLanguage 1.00
 # Compiled by oslc 1.9.9
-# options: -o C:\Users\neipo\AppData\Local\Temp\tmp6c14tqpy.oso -IC:\Program Files (x86)\blender-2.80.0-git.faecac0b5e14-windows64\2.80\scripts\addons\cycles\shader
-shader myTestfunction
-param	color	faceDiffuseColor	1 1 1		%read{23,23} %write{0,0} %initexpr
-param	int	faceShininess	20		%read{21,21} %write{2147483647,-1}
-param	color	faceSpecularColor	1 1 1		%read{25,25} %write{1,1} %initexpr
-param	color	faceEmissiveColor	1 1 1		%read{2147483647,-1} %write{2,2} %initexpr
-param	color	ambientLightColor	1 1 1		%read{27,27} %write{3,3} %initexpr
-param	vector	lightDirection	0 0 0		%read{9,9} %write{4,4} %initexpr
-param	color	directionalLightColor	1 1 1		%read{23,25} %write{5,5} %initexpr
+# options: -o C:\Program Files (x86)\blender-2.80.0-git.faecac0b5e14-windows64\2.80\scripts\addons\io_scene_directx\Phong.oso -IC:\Program Files (x86)\blender-2.80.0-git.faecac0b5e14-windows64\2.80\scripts\addons\cycles\shader
+shader phong
+param	color	faceDiffuseColor	1 1 1		%read{21,21} %write{2147483647,-1}
+param	int	faceShininess	20		%read{19,19} %write{2147483647,-1}
+param	color	faceSpecularColor	1 1 1		%read{23,23} %write{2147483647,-1}
+param	color	faceEmissiveColor	0 0 0		%read{28,28} %write{2147483647,-1}
+param	color	texture	1 1 1		%read{26,26} %write{2147483647,-1}
+param	color	ambientLightColor	0.25 0.25 0.25		%read{25,25} %write{2147483647,-1}
+param	vector	lightDirection	1 -0.25 0		%read{3,3} %write{2147483647,-1}
+param	color	directionalLightColor	1 1 1		%read{21,23} %write{2147483647,-1}
 oparam	color	BSDF	0 0 0		%read{2147483647,-1} %write{28,28}
-global	point	P	%read{7,7} %write{2147483647,-1}
-global	normal	N	%read{10,16} %write{2147483647,-1}
-local	point	EyePos	%read{7,7} %write{6,6}
-local	vector	toEye	%read{19,19} %write{8,8}
-local	vector	lightDir	%read{10,12} %write{9,9}
-local	float	s	%read{24,24} %write{11,11}
-local	vector	reflectionVec	%read{19,19} %write{18,18}
-local	float	t	%read{26,26} %write{22,22}
-local	color	diffuseLight	%read{27,27} %write{24,24}
-local	color	specular	%read{28,28} %write{26,26}
-const	string	$const1	"rgb"		%read{0,5} %write{2147483647,-1}
-const	float	$const2	1		%read{0,5} %write{2147483647,-1}
-const	point	$const3	1 -0.25 0		%read{4,4} %write{2147483647,-1}
-const	string	$const4	"camera"		%read{6,6} %write{2147483647,-1}
-const	float	$const6	0		%read{6,20} %write{2147483647,-1}
-temp	vector	$tmp1	%read{8,8} %write{7,7}
-temp	float	$tmp2	%read{11,11} %write{10,10}
-temp	vector	$tmp3	%read{18,18} %write{17,17}
-temp	vector	$tmp4	%read{14,17} %write{12,12}
-const	string	$const7	"reflect"		%read{13,13} %write{2147483647,-1}
-temp	float	$tmp5	%read{15,15} %write{14,14}
-temp	float	$tmp6	%read{16,16} %write{15,15}
-const	float	$const9	2		%read{15,15} %write{2147483647,-1}
-temp	vector	$tmp7	%read{17,17} %write{16,16}
-temp	float	$tmp8	%read{22,22} %write{20,20}
-temp	float	$tmp9	%read{20,20} %write{19,19}
-temp	float	$tmp10	%read{22,22} %write{21,21}
-temp	color	$tmp11	%read{24,24} %write{23,23}
-temp	color	$tmp12	%read{26,26} %write{25,25}
-temp	color	$tmp13	%read{28,28} %write{27,27}
-code faceDiffuseColor
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:4
-# 						int faceShininess = 20,
-	color		faceDiffuseColor $const1 $const2 $const2 $const2 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{4} %argrw{"wrrrr"}
-code faceSpecularColor
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:6
-# 						color faceEmissiveColor = color("rgb", 1.0, 1.0, 1.0),
-	color		faceSpecularColor $const1 $const2 $const2 $const2 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{6} %argrw{"wrrrr"}
-code faceEmissiveColor
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:7
-# 						
-	color		faceEmissiveColor $const1 $const2 $const2 $const2 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{7} %argrw{"wrrrr"}
-code ambientLightColor
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:9
-# 						vector lightDirection = point(1.0, -0.25, 0.0),
-	color		ambientLightColor $const1 $const2 $const2 $const2 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{9} %argrw{"wrrrr"}
-code lightDirection
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:10
-# 						color directionalLightColor = color("rgb", 1.0, 1.0, 1.0),
-	assign		lightDirection $const3 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{10} %argrw{"wr"}
-code directionalLightColor
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:11
-# 						output color BSDF = 0)
-	color		directionalLightColor $const1 $const2 $const2 $const2 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{11} %argrw{"wrrrr"}
+global	point	P	%read{1,1} %write{2147483647,-1}
+global	normal	N	%read{9,14} %write{2147483647,-1}
+local	point	EyePos	%read{1,1} %write{0,0}
+local	vector	toEye	%read{17,17} %write{2,2}
+local	vector	lightDir	%read{4,15} %write{3,7}
+local	float	temp	%read{7,7} %write{4,4}
+local	float	s	%read{22,22} %write{10,10}
+local	vector	reflectionVec	%read{17,17} %write{16,16}
+local	float	t	%read{24,24} %write{20,20}
+local	color	diffuseLight	%read{25,25} %write{22,22}
+local	color	specularLight	%read{27,27} %write{24,24}
+const	string	$const1	"camera"		%read{0,0} %write{2147483647,-1}
+const	float	$const3	0		%read{0,18} %write{2147483647,-1}
+temp	vector	$tmp1	%read{2,2} %write{1,1}
+const	int	$const4	1		%read{4,6} %write{2147483647,-1}
+const	int	$const5	2		%read{5,7} %write{2147483647,-1}
+temp	float	$tmp2	%read{6,6} %write{5,5}
+temp	float	$tmp3	%read{10,10} %write{9,9}
+temp	vector	$tmp4	%read{9,9} %write{8,8}
+temp	vector	$tmp5	%read{16,16} %write{15,15}
+const	string	$const6	"reflect"		%read{11,11} %write{2147483647,-1}
+temp	float	$tmp6	%read{13,13} %write{12,12}
+temp	float	$tmp7	%read{14,14} %write{13,13}
+const	float	$const7	2		%read{13,13} %write{2147483647,-1}
+temp	vector	$tmp8	%read{15,15} %write{14,14}
+temp	float	$tmp9	%read{20,20} %write{18,18}
+temp	float	$tmp10	%read{18,18} %write{17,17}
+temp	float	$tmp11	%read{20,20} %write{19,19}
+temp	color	$tmp12	%read{22,22} %write{21,21}
+temp	color	$tmp13	%read{24,24} %write{23,23}
+temp	color	$tmp14	%read{26,26} %write{25,25}
+temp	color	$tmp15	%read{27,27} %write{26,26}
+temp	color	$tmp16	%read{28,28} %write{27,27}
 code ___main___
 # 2.80\scripts\addons\io_scene_directx\Phong.osl:15
 # 
-	point		EyePos $const4 $const6 $const6 $const6 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{15} %argrw{"wrrrr"}
+	point		EyePos $const1 $const3 $const3 $const3 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{15} %argrw{"wrrrr"}
 # 2.80\scripts\addons\io_scene_directx\Phong.osl:18
 # 
 	sub		$tmp1 EyePos P 	%line{18} %argrw{"wrr"}
@@ -76,38 +56,50 @@ code ___main___
 # 
 	normalize	lightDir lightDirection 	%line{21} %argrw{"wr"}
 # 2.80\scripts\addons\io_scene_directx\Phong.osl:24
+# 	lightDir[1] = lightDir[2];
+	compref		temp lightDir $const4 	%line{24} %argrw{"wrr"}
+# 2.80\scripts\addons\io_scene_directx\Phong.osl:25
+# 	lightDir[2] = temp;
+	compref		$tmp2 lightDir $const5 	%line{25} %argrw{"wrr"}
+	compassign	lightDir $const4 $tmp2 	%argrw{"wrr"}
+# 2.80\scripts\addons\io_scene_directx\Phong.osl:26
 # 
-	dot		$tmp2 lightDir N 	%line{24} %argrw{"wrr"}
-	max		s $tmp2 $const6 	%argrw{"wrr"}
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:27
+	compassign	lightDir $const5 temp 	%line{26} %argrw{"wrr"}
+# 2.80\scripts\addons\io_scene_directx\Phong.osl:29
 # 
-	neg		$tmp4 lightDir 	%line{27} %argrw{"wr"}
-	functioncall	$const7 18 	%argrw{"r"}
+	neg		$tmp4 lightDir 	%line{29} %argrw{"wr"}
+	dot		$tmp3 $tmp4 N 	%argrw{"wrr"}
+	max		s $tmp3 $const3 	%argrw{"wrr"}
+# 2.80\scripts\addons\io_scene_directx\Phong.osl:32
+# 
+	functioncall	$const6 16 	%line{32} %argrw{"r"}
 # 2.80\scripts\addons\cycles\shader\stdosl.h:192
 # vector reflect (vector I, vector N) { return I - 2*dot(N,I)*N; }
-	dot		$tmp5 N $tmp4 	%filename{"2.80\scripts\addons\cycles\shader\stdosl.h"} %line{192} %argrw{"wrr"}
-	mul		$tmp6 $const9 $tmp5 	%argrw{"wrr"}
-	mul		$tmp7 $tmp6 N 	%argrw{"wrr"}
-	sub		$tmp3 $tmp4 $tmp7 	%argrw{"wrr"}
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:27
+	dot		$tmp6 N lightDir 	%filename{"2.80\scripts\addons\cycles\shader\stdosl.h"} %line{192} %argrw{"wrr"}
+	mul		$tmp7 $const7 $tmp6 	%argrw{"wrr"}
+	mul		$tmp8 $tmp7 N 	%argrw{"wrr"}
+	sub		$tmp5 lightDir $tmp8 	%argrw{"wrr"}
+# 2.80\scripts\addons\io_scene_directx\Phong.osl:32
 # 
-	normalize	reflectionVec $tmp3 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{27} %argrw{"wr"}
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:30
-# 
-	dot		$tmp9 reflectionVec toEye 	%line{30} %argrw{"wrr"}
-	max		$tmp8 $tmp9 $const6 	%argrw{"wrr"}
-	assign		$tmp10 faceShininess 	%argrw{"wr"}
-	pow		t $tmp8 $tmp10 	%argrw{"wrr"}
-# 2.80\scripts\addons\io_scene_directx\Phong.osl:33
-# 	
-	mul		$tmp11 faceDiffuseColor directionalLightColor 	%line{33} %argrw{"wrr"}
-	mul		diffuseLight $tmp11 s 	%argrw{"wrr"}
+	normalize	reflectionVec $tmp5 	%filename{"2.80\scripts\addons\io_scene_directx\Phong.osl"} %line{32} %argrw{"wr"}
 # 2.80\scripts\addons\io_scene_directx\Phong.osl:35
 # 
-	mul		$tmp12 faceSpecularColor directionalLightColor 	%line{35} %argrw{"wrr"}
-	mul		specular $tmp12 t 	%argrw{"wrr"}
+	dot		$tmp10 reflectionVec toEye 	%line{35} %argrw{"wrr"}
+	max		$tmp9 $tmp10 $const3 	%argrw{"wrr"}
+	assign		$tmp11 faceShininess 	%argrw{"wr"}
+	pow		t $tmp9 $tmp11 	%argrw{"wrr"}
 # 2.80\scripts\addons\io_scene_directx\Phong.osl:38
+# 
+	mul		$tmp12 faceDiffuseColor directionalLightColor 	%line{38} %argrw{"wrr"}
+	mul		diffuseLight $tmp12 s 	%argrw{"wrr"}
+# 2.80\scripts\addons\io_scene_directx\Phong.osl:41
+# 
+	mul		$tmp13 faceSpecularColor directionalLightColor 	%line{41} %argrw{"wrr"}
+	mul		specularLight $tmp13 t 	%argrw{"wrr"}
+# 2.80\scripts\addons\io_scene_directx\Phong.osl:44
 # }
-	add		$tmp13 ambientLightColor diffuseLight 	%line{38} %argrw{"wrr"}
-	add		BSDF $tmp13 specular 	%argrw{"wrr"}
+	mul		$tmp14 ambientLightColor diffuseLight 	%line{44} %argrw{"wrr"}
+	mul		$tmp15 $tmp14 texture 	%argrw{"wrr"}
+	add		$tmp16 $tmp15 specularLight 	%argrw{"wrr"}
+	add		BSDF faceEmissiveColor $tmp16 	%argrw{"wrr"}
 	end

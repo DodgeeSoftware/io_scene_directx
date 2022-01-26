@@ -1,13 +1,13 @@
 
 
-shader myTestfunction(color faceDiffuseColor = color("rgb", 1.0, 1.0, 1.0),
+shader phong(color faceDiffuseColor = color(1.0, 1.0, 1.0),
 						int faceShininess = 20,
-						color faceSpecularColor = color("rgb", 1.0, 1.0, 1.0),
-						color faceEmissiveColor = color("rgb", 1.0, 1.0, 1.0),
-						
-						color ambientLightColor = color("rgb", 1.0, 1.0, 1.0),
-						vector lightDirection = point(1.0, -0.25, 0.0),
-						color directionalLightColor = color("rgb", 1.0, 1.0, 1.0),
+						color faceSpecularColor = color(1.0, 1.0, 1.0),
+						color faceEmissiveColor = color(0.0, 0.0, 0.0),
+						color texture = color(1.0, 1.0, 1.0),
+						color ambientLightColor = color(0.25, 0.25, 0.25),
+						vector lightDirection = vector(1.0, -0.25, 0.0),
+						color directionalLightColor = color(1.0, 1.0, 1.0),
 						output color BSDF = 0)
 {
 	// Grab the EyePosition
@@ -19,20 +19,26 @@ shader myTestfunction(color faceDiffuseColor = color("rgb", 1.0, 1.0, 1.0),
 	// Normalize lightDirection
 	vector lightDir = normalize(lightDirection);
 
+	// Blender uses xyz not xyz so swap Y and Z here
+	float temp = lightDir[1];
+	lightDir[1] = lightDir[2];
+	lightDir[2] = temp;
+
 	// Calculate diffuse co-efficient
-	float s = max(dot(lightDir, N), 0.0);
+	float s = max(dot(-lightDir, N), 0.0);
 
 	// Compute the reflection Vector
-	vector reflectionVec = normalize(reflect(-lightDir, N));
+	vector reflectionVec = normalize(reflect(lightDir, N));
 
 	// Determine how much (if any) specular light makes it to the eye
 	float t = pow(max(dot(reflectionVec, toEye), 0.0), faceShininess);
 
-	// Calculate Lighting components        
+	// Calculate DiffuseLight
 	color diffuseLight = (faceDiffuseColor * directionalLightColor) * s;
-	
-	color specular = (faceSpecularColor * directionalLightColor) * t;
+
+	// Calculate SpecularLight
+	color specularLight = (faceSpecularColor * directionalLightColor) * t;
 
 	// Set the final Color
-	BSDF = faceEmissiveColor + ambientLightColor + (diffuseLight + specular);
+	BSDF = faceEmissiveColor + ((ambientLightColor * diffuseLight) * texture + specularLight);
 }
