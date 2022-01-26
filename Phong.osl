@@ -1,0 +1,38 @@
+
+
+shader myTestfunction(color faceDiffuseColor = color("rgb", 1.0, 1.0, 1.0),
+						int faceShininess = 20,
+						color faceSpecularColor = color("rgb", 1.0, 1.0, 1.0),
+						color faceEmissiveColor = color("rgb", 1.0, 1.0, 1.0),
+						
+						color ambientLightColor = color("rgb", 1.0, 1.0, 1.0),
+						vector lightDirection = point(1.0, -0.25, 0.0),
+						color directionalLightColor = color("rgb", 1.0, 1.0, 1.0),
+						output color BSDF = 0)
+{
+	// Grab the EyePosition
+	point EyePos = point("camera", 0, 0, 0);
+
+	// Compute the vector from the vertex to the eye position
+	vector toEye = normalize(EyePos - P);
+
+	// Normalize lightDirection
+	vector lightDir = normalize(lightDirection);
+
+	// Calculate diffuse co-efficient
+	float s = max(dot(lightDir, N), 0.0);
+
+	// Compute the reflection Vector
+	vector reflectionVec = normalize(reflect(-lightDir, N));
+
+	// Determine how much (if any) specular light makes it to the eye
+	float t = pow(max(dot(reflectionVec, toEye), 0.0), faceShininess);
+
+	// Calculate Lighting components        
+	color diffuseLight = (faceDiffuseColor * directionalLightColor) * s;
+	
+	color specular = (faceSpecularColor * directionalLightColor) * t;
+
+	// Set the final Color
+	BSDF = faceEmissiveColor + ambientLightColor + (diffuseLight + specular);
+}
