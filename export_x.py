@@ -51,11 +51,14 @@ def ExportFile(filepath):
 			continue
 		# Grab the Mesh from the Object
 		mesh = object.data
+		
+		# WRITE MESH FRAME
 		# Write the Object Name
 		f.write("# " + object.name + "\n")
 		f.write("Frame\n")
 		f.write("{\n")
-		# Write the FrameTransformationMatrix
+		
+		# WRITE FRAMETRANSFORMATIONMATRIX
 		f.write("FrameTransformMatrix\n")
 		f.write("{\n")
 		# TODO: Try and replace this with a reusable function
@@ -104,7 +107,8 @@ def ExportFile(filepath):
 					f.write(",")
 			f.write("\n")
 		f.write("}\n")
-		# Write the Mesh
+		
+		# WRITE THE MESH
 		f.write("Mesh " + mesh.name + "\n{" + "\n")
 		# Grab the Number of Vertices
 		mesh_verts = mesh.vertices[:]
@@ -134,7 +138,8 @@ def ExportFile(filepath):
 			# Increment our subscripts
 			subscriptOffset += len(polygon.vertices)
 		f.write("\n")
-
+		
+		# WRITE POLYGON INDICES
 		# Write the Number of Polygons
 		f.write(str(len(mesh_polygons)) +";\n")
 		# Write the Polygons
@@ -156,6 +161,7 @@ def ExportFile(filepath):
 			f.write("\n")
 		f.write("\n")
 
+		# WRITE NORMALS FOR THE MESH
 		# TODO: Need to figure out how to provide support for per face vertex normals.
 		# there must be away to create them in blender then detect them in script
 		# and save them here when they exist. At the moment all polygons in a mesh
@@ -190,6 +196,8 @@ def ExportFile(filepath):
 					f.write(",")
 				f.write("\n")
 		f.write("\n")
+		
+		# WRITE THE POLYGONS
 		# Write the Number of Polygons
 		f.write(str(len(mesh_polygons)) +";\n")
 		# Write the Polygons
@@ -210,7 +218,8 @@ def ExportFile(filepath):
 			subscriptOffset = subscriptOffset + len(polygon.vertices)
 			f.write("\n")
 		f.write("}\n")
-
+		
+		# WRITE UVS (IF ANY)
 		# Do we have uv data?
 		if len(mesh.uv_layers) > 0:
 			# NOTE: There can only be one active UVMap per mesh. This
@@ -239,8 +248,9 @@ def ExportFile(filepath):
 				subscriptOffset = subscriptOffset + len(polygon.vertices)
 			f.write("}\n")
 
+		# WRITE MATERIALS LIST
 		# Grab the Materials used by this mesh
-		mesh_materials = mesh.materials[:]		
+		mesh_materials = mesh.materials[:]
 		# Write the MeshMaterial List
 		f.write("MeshMaterialList\n{\n")
 		# Write the number of materials used by this mesh
@@ -273,6 +283,34 @@ def ExportFile(filepath):
 				emissiveColor = [0.0, 0.0, 0.0, 1.0]
 				filenameandpath = ""
 				for node in material.node_tree.nodes:
+					if node.type == 'SCRIPT':
+						# GRAB THE FACE COLOR
+						colorSocket = node.inputs[0]
+						faceColor[0] = colorSocket.default_value[0]
+						faceColor[1] = colorSocket.default_value[1]
+						faceColor[2] = colorSocket.default_value[2]
+						faceColor[3] = colorSocket.default_value[3]
+						# GRAB THE SPECULAR POWER
+						floatSocket = node.inputs[1]
+						# Convert the Roughness into specular cooefficient
+						power = floatSocket.default_value
+						# Specular power must be greater than 1
+						if power < 1.0:
+							power = 1.0
+						if power > 800.0:
+							power = 800.0
+						# GRAB THE SPECULAR COLOR
+						colorSocket = node.inputs[2]
+						specularColor[0] = colorSocket.default_value[0]
+						specularColor[1] = colorSocket.default_value[1]
+						specularColor[2] = colorSocket.default_value[2]
+						specularColor[3] = colorSocket.default_value[3]
+						# GRAB THE EMISSIVE COLOR
+						colorSocket = node.inputs[3]
+						emissiveColor[0] = colorSocket.default_value[0]
+						emissiveColor[1] = colorSocket.default_value[1]
+						emissiveColor[2] = colorSocket.default_value[2]
+						emissiveColor[3] = colorSocket.default_value[3]
 					if node.type == 'EEVEE_SPECULAR':
 						# Grab Diffuse colour
 						colorSocket = node.inputs[0]
@@ -285,18 +323,27 @@ def ExportFile(filepath):
 						specularColor[0] = colorSocket.default_value[0]
 						specularColor[1] = colorSocket.default_value[1]
 						specularColor[2] = colorSocket.default_value[2]
+						specularColor[3] = colorSocket.default_value[3]
 						floatSocket = node.inputs[2]
-						power = floatSocket.default_value
+						# Convert the Roughness into specular cooefficient
+						power = (1.0 - floatSocket.default_value) * 800.0
+						# Specular power must be greater than 1
+						if power < 1.0:
+							power = 1.0
+						if power > 800.0:
+							power = 800.0
 						colorSocket = node.inputs[3]
 						# Grab Emissive colour
 						emissiveColor[0] = colorSocket.default_value[0]
 						emissiveColor[1] = colorSocket.default_value[1]
 						emissiveColor[2] = colorSocket.default_value[2]
+						emissiveColor[3] = colorSocket.default_value[3]
 					# If there is a texture grab the filenameandpath
 					if node.type == 'TEX_IMAGE':
-						image = node.image
-						if image != None:
-							filenameandpath = image.filepath
+						if node.outputs[0].is_linked == True:
+							image = node.image
+							if image != None:
+								filenameandpath = image.filepath
 				# Write the Diffuse Colour
 				f.write(str('%.6f' % faceColor[0]) + ";" + str('%.6f' % faceColor[1]) + ";" + str('%.6f' % faceColor[2]) + ";" + str('%.6f' % faceColor[3]) + ";;\n")
 				# Write the Specular Cooefficient
@@ -308,8 +355,8 @@ def ExportFile(filepath):
 			# If there is a texture write the TexutreFilename node to the file
 			if len(filenameandpath):
 				f.write("TextureFilename\n{\n")
-				#TODO: extract the filename from the filenameandpath
-				f.write("\"" + Path(filenameandpath).name + "\"" + ";\n")
+				#f.write("\"" + Path(filenameandpath).name + "\"" + ";\n")
+				f.write("\"" + ExtractFilenameFromPath(filenameandpath) + "\"" + ";\n")
 				f.write("}\n")
 			f.write("}\n")
 		# If there are no materials then use a default one
@@ -584,13 +631,22 @@ def ExportFile(filepath):
 	# Complete the Export
 	return {'FINISHED'}
 
+def ExtractFilenameFromPath(filenameandpath):
+	indexOfBeginingOfFilename = 0;
+	for index in range(len(filenameandpath)):
+		i = (len(filenameandpath) - 1) - index 
+		if filenameandpath[i] == '\\' or filenameandpath[i] == '/':
+			indexOfBeginingOfFilename = i + 1
+			break
+	return filenameandpath[indexOfBeginingOfFilename : len(filenameandpath) : 1]
+
 def WriteHeader(f):
 	f.write("xof 0302txt 0032\n")
 	#f.write("Header {1; 0; 1;}\n") # TODO: This really isn't necessary should we remove this?
 	#f.write("\n")
 	f.write("# Created by DodgeeSoftware's DirectX Model Exporter\n")
 	f.write("# Website: www.dodgeesoftware.com\n")
-	f.write("# Email: info@dodgeesoftware.com\n")
+	f.write("# Email: dodgeesoftware@gmail.com\n")
 	f.write("\n")
 
 def WriteBoilerPlate(f):
